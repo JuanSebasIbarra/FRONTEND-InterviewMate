@@ -1,14 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import './App.css'
-
-type Role = 'ROLE_USER' | 'ROLE_ADMIN'
 
 type User = {
   id: number
   username: string
   email: string
-  roles: Role[]
+  roles: string[]
   createdAt: string
 }
 
@@ -17,17 +15,6 @@ type LoginResponse = {
   tokenType: string
   expiresAt: string
   username: string
-}
-
-type PagedResponse<T> = {
-  content: T[]
-  totalPages: number
-  totalElements: number
-  number: number
-  size: number
-  first: boolean
-  last: boolean
-  empty: boolean
 }
 
 type ProfessionalProfile = {
@@ -67,50 +54,32 @@ type AnswerResponse = {
 
 type ApiError = {
   status?: number
-  error?: string
   message?: string
-  timestamp?: string
   fieldErrors?: Record<string, string>
 }
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
+const TOKEN_STORAGE_KEY = 'interviewmate_token'
+
 function App() {
-  const [baseUrl, setBaseUrl] = useState('http://localhost:8080')
-  const [token, setToken] = useState('')
+  const [token, setToken] = useState(localStorage.getItem(TOKEN_STORAGE_KEY) ?? '')
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
   const [loading, setLoading] = useState(false)
-  const [lastStatus, setLastStatus] = useState<number | null>(null)
-  const [lastAction, setLastAction] = useState('')
-  const [lastResponse, setLastResponse] = useState<unknown>(null)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
-  const [registerForm, setRegisterForm] = useState({
-    username: 'alice',
-    email: 'alice@example.com',
-    password: 'SecurePass123!',
-  })
+  const [registerForm, setRegisterForm] = useState({ username: '', email: '', password: '' })
   const [loginForm, setLoginForm] = useState({
-    username: 'alice',
-    password: 'SecurePass123!',
+    username: '',
+    password: '',
   })
-
-  const [queryPage, setQueryPage] = useState(0)
-  const [querySize, setQuerySize] = useState(10)
-  const [querySort, setQuerySort] = useState('createdAt,desc')
-  const [userId, setUserId] = useState(1)
-  const [userCreateForm, setUserCreateForm] = useState({
-    username: 'bob',
-    email: 'bob@example.com',
-    password: 'SecurePass456!',
-  })
-  const [userUpdateForm, setUserUpdateForm] = useState({
-    username: 'alice_updated',
-    email: 'alice_new@example.com',
-    password: 'NewPassword789!',
-  })
-
-  const [perfilProfesional, setPerfilProfesional] = useState(
-    'Desarrollador Full Stack con experiencia en Java, React y Cloud Computing.',
-  )
+  const [perfilProfesional, setPerfilProfesional] = useState('')
+  const [profileData, setProfileData] = useState<ProfessionalProfile | null>(null)
+  const [interviewData, setInterviewData] = useState<Interview | null>(null)
+  const [lastAnswer, setLastAnswer] = useState<AnswerResponse | null>(null)
 
   const [tipoEntrevista, setTipoEntrevista] = useState<
     'TECNICA' | 'COMPORTAMENTAL' | 'MIXTA'
@@ -119,63 +88,77 @@ function App() {
     'BASICO' | 'INTERMEDIO' | 'AVANZADO'
   >('INTERMEDIO')
   const [questionId, setQuestionId] = useState(1)
-  const [answerText, setAnswerText] = useState(
-    'Una clase abstracta comparte implementación base; una interfaz define un contrato de comportamiento.',
-  )
+  const [answerText, setAnswerText] = useState('')
 
-  const prettyResponse = useMemo(
-    () => (lastResponse ? JSON.stringify(lastResponse, null, 2) : ''),
-    [lastResponse],
-  )
+  const questionOptions = useMemo(() => interviewData?.questions ?? [], [interviewData])
+
+  useEffect(() => {
+    if (!token) return
+    void loadCurrentUser(token)
+  }, [token])
 
   const callApi = async <T,>(
-    action: string,
     path: string,
     method: HttpMethod,
     body?: unknown,
-    customToken?: string,
   ) => {
     setLoading(true)
-    setLastAction(action)
+    setError('')
+    setSuccess('')
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
 
-    const authToken = customToken ?? token
-    if (authToken.trim()) {
-      headers.Authorization = `Bearer ${authToken}`
+    if (token.trim()) {
+      headers.Authorization = `Bearer ${token}`
     }
 
     try {
-      const response = await fetch(`${baseUrl}${path}`, {
+      const response = await fetch(`${BASE_URL}${path}`, {
         method,
         headers,
         body: body ? JSON.stringify(body) : undefined,
       })
 
-      setLastStatus(response.status)
-
-      if (response.status === 204) {
-        setLastResponse({ message: 'Sin contenido (204)' })
-        return null as T
-      }
-
       const text = await response.text()
       const data = text ? (JSON.parse(text) as T | ApiError) : null
 
       if (!response.ok) {
-        setLastResponse(data)
-        throw new Error(`Request failed: ${response.status}`)
+        const apiError = data as ApiError
+        const fieldError = apiError.fieldErrors
+          ? Object.values(apiError.fieldErrors).join(' · ')
+          : ''
+        const message = apiError.message || fieldError || 'No se pudo completar la operación.'
+        throw new Error(message)
       }
 
-      setLastResponse(data)
       return data as T
     } catch (error) {
-      if (!lastResponse) {
-        setLastResponse({ message: (error as Error).message })
-      }
+      setError((error as Error).message)
       throw error
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadCurrentUser = async (tokenValue: string) => {
+    try {
+      setLoading(true)
+      setError('')
+      const response = await fetch(`${BASE_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${tokenValue}` },
+      })
+
+      if (!response.ok) {
+        localStorage.removeItem(TOKEN_STORAGE_KEY)
+        setToken('')
+        setCurrentUser(null)
+        return
+      }
+
+      const user = (await response.json()) as User
+      setCurrentUser(user)
     } finally {
       setLoading(false)
     }
@@ -183,190 +166,302 @@ function App() {
 
   const onRegister = async (e: FormEvent) => {
     e.preventDefault()
-    await callApi<User>('Register', '/auth/register', 'POST', registerForm)
+    try {
+      await callApi<User>('/auth/register', 'POST', registerForm)
+      setSuccess('Registro exitoso. Ahora inicia sesión.')
+      setAuthMode('login')
+      setLoginForm({ username: registerForm.username, password: '' })
+    } catch {
+      // controlled in callApi
+    }
   }
 
   const onLogin = async (e: FormEvent) => {
     e.preventDefault()
-    const data = await callApi<LoginResponse>('Login', '/auth/login', 'POST', loginForm)
-    if (data?.token) setToken(data.token)
+    try {
+      const data = await callApi<LoginResponse>('/auth/login', 'POST', loginForm)
+      if (!data?.token) return
+      setToken(data.token)
+      localStorage.setItem(TOKEN_STORAGE_KEY, data.token)
+      await loadCurrentUser(data.token)
+      setSuccess('Inicio de sesión exitoso.')
+    } catch {
+      // controlled in callApi
+    }
+  }
+
+  const onLogout = () => {
+    localStorage.removeItem(TOKEN_STORAGE_KEY)
+    setToken('')
+    setCurrentUser(null)
+    setProfileData(null)
+    setInterviewData(null)
+    setLastAnswer(null)
+    setSuccess('Sesión cerrada correctamente.')
+  }
+
+  const onGetProfile = async () => {
+    try {
+      const profile = await callApi<ProfessionalProfile>('/usuarios/perfil', 'GET')
+      setProfileData(profile)
+      setPerfilProfesional(profile.perfilProfesional)
+    } catch {
+      // controlled in callApi
+    }
+  }
+
+  const onUpdateProfile = async () => {
+    try {
+      const profile = await callApi<ProfessionalProfile>('/usuarios/perfil', 'PUT', {
+        perfilProfesional,
+      })
+      setProfileData(profile)
+      setSuccess('Perfil profesional actualizado.')
+    } catch {
+      // controlled in callApi
+    }
+  }
+
+  const onStartInterview = async () => {
+    try {
+      const interview = await callApi<Interview>('/entrevistas/start', 'POST', {
+        tipoEntrevista,
+        nivelDificultad,
+      })
+      setInterviewData(interview)
+      if (interview.questions.length > 0) {
+        setQuestionId(interview.questions[0].id)
+      }
+      setSuccess('Entrevista iniciada correctamente.')
+    } catch {
+      // controlled in callApi
+    }
+  }
+
+  const onSubmitAnswer = async (e: FormEvent) => {
+    e.preventDefault()
+    try {
+      const answer = await callApi<AnswerResponse>('/entrevistas/respuestas', 'POST', {
+        idPregunta: questionId,
+        respuesta: answerText,
+      })
+      setLastAnswer(answer)
+      setAnswerText('')
+      setSuccess('Respuesta enviada.')
+    } catch {
+      // controlled in callApi
+    }
+  }
+
+  if (!currentUser) {
+    return (
+      <main className="auth-page">
+        <section className="auth-card">
+          <h1>InterviewMate</h1>
+          <p>Inicia sesión para practicar entrevistas técnicas con IA.</p>
+
+          {error && <p className="alert error">{error}</p>}
+          {success && <p className="alert success">{success}</p>}
+
+          {authMode === 'login' ? (
+            <form onSubmit={onLogin} className="stack">
+              <label>
+                Nombre de usuario
+                <input
+                  required
+                  value={loginForm.username}
+                  onChange={(e) => setLoginForm((v) => ({ ...v, username: e.target.value }))}
+                  placeholder="tu_usuario"
+                />
+              </label>
+              <label>
+                Contraseña
+                <input
+                  required
+                  type="password"
+                  value={loginForm.password}
+                  onChange={(e) => setLoginForm((v) => ({ ...v, password: e.target.value }))}
+                  placeholder="********"
+                />
+              </label>
+              <button disabled={loading}>{loading ? 'Ingresando...' : 'Iniciar sesión'}</button>
+              <button type="button" className="link-btn" onClick={() => setAuthMode('register')}>
+                ¿No tienes cuenta? Regístrate
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={onRegister} className="stack">
+              <label>
+                Nombre de usuario
+                <input
+                  required
+                  value={registerForm.username}
+                  onChange={(e) =>
+                    setRegisterForm((v) => ({ ...v, username: e.target.value }))
+                  }
+                  placeholder="tu_usuario"
+                />
+              </label>
+              <label>
+                Correo electrónico
+                <input
+                  required
+                  type="email"
+                  value={registerForm.email}
+                  onChange={(e) => setRegisterForm((v) => ({ ...v, email: e.target.value }))}
+                  placeholder="correo@ejemplo.com"
+                />
+              </label>
+              <label>
+                Contraseña
+                <input
+                  required
+                  type="password"
+                  minLength={8}
+                  value={registerForm.password}
+                  onChange={(e) =>
+                    setRegisterForm((v) => ({ ...v, password: e.target.value }))
+                  }
+                  placeholder="mínimo 8 caracteres"
+                />
+              </label>
+              <button disabled={loading}>{loading ? 'Registrando...' : 'Crear cuenta'}</button>
+              <button type="button" className="link-btn" onClick={() => setAuthMode('login')}>
+                Ya tengo cuenta
+              </button>
+            </form>
+          )}
+        </section>
+      </main>
+    )
   }
 
   return (
     <main className="app">
-      <header>
-        <h1>InterviewMate Frontend</h1>
-        <p>Panel React + TypeScript para probar todos los endpoints de tu backend Spring Boot.</p>
+      <header className="topbar">
+        <div>
+          <h1>Dashboard de Entrevistas</h1>
+          <p>Hola, {currentUser.username}. Gestiona tu perfil y práctica técnica.</p>
+        </div>
+        <button className="danger" onClick={onLogout}>
+          Cerrar sesión
+        </button>
       </header>
 
-      <section className="card">
-        <h2>Configuración</h2>
-        <div className="grid two">
-          <label>
-            Base URL
-            <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
-          </label>
-          <label>
-            Token JWT
-            <input value={token} onChange={(e) => setToken(e.target.value)} placeholder="Bearer token" />
-          </label>
-        </div>
-      </section>
+      {error && <p className="alert error">{error}</p>}
+      {success && <p className="alert success">{success}</p>}
 
       <section className="card">
-        <h2>🔐 Autenticación</h2>
-        <div className="grid two">
-          <form onSubmit={onRegister}>
-            <h3>Register</h3>
-            <input placeholder="username" value={registerForm.username} onChange={(e) => setRegisterForm((v) => ({ ...v, username: e.target.value }))} />
-            <input placeholder="email" type="email" value={registerForm.email} onChange={(e) => setRegisterForm((v) => ({ ...v, email: e.target.value }))} />
-            <input placeholder="password" type="password" value={registerForm.password} onChange={(e) => setRegisterForm((v) => ({ ...v, password: e.target.value }))} />
-            <button disabled={loading}>Registrar</button>
-          </form>
-
-          <form onSubmit={onLogin}>
-            <h3>Login</h3>
-            <input placeholder="username" value={loginForm.username} onChange={(e) => setLoginForm((v) => ({ ...v, username: e.target.value }))} />
-            <input placeholder="password" type="password" value={loginForm.password} onChange={(e) => setLoginForm((v) => ({ ...v, password: e.target.value }))} />
-            <button disabled={loading}>Iniciar sesión</button>
-            <button type="button" className="secondary" disabled={loading} onClick={() => void callApi<User>('Get Current User', '/auth/me', 'GET')}>
-              Get /auth/me
-            </button>
-          </form>
-        </div>
-      </section>
-
-      <section className="card">
-        <h2>👥 Usuarios</h2>
-        <div className="grid three">
-          <div>
-            <h3>Listar</h3>
-            <input type="number" value={queryPage} onChange={(e) => setQueryPage(Number(e.target.value))} />
-            <input type="number" value={querySize} onChange={(e) => setQuerySize(Number(e.target.value))} />
-            <input value={querySort} onChange={(e) => setQuerySort(e.target.value)} />
-            <button disabled={loading} onClick={() => void callApi<PagedResponse<User>>('List Users', `/usuarios?page=${queryPage}&size=${querySize}&sort=${querySort}`, 'GET')}>
-              Get /usuarios
-            </button>
-          </div>
-
-          <div>
-            <h3>Por ID</h3>
-            <input type="number" value={userId} onChange={(e) => setUserId(Number(e.target.value))} />
-            <button disabled={loading} onClick={() => void callApi<User>('Get User by ID', `/usuarios/${userId}`, 'GET')}>
-              Get /usuarios/:id
-            </button>
-            <button className="danger" disabled={loading} onClick={() => void callApi<null>('Delete User', `/usuarios/${userId}`, 'DELETE')}>
-              Delete /usuarios/:id
-            </button>
-          </div>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              void callApi<User>('Create User', '/usuarios', 'POST', userCreateForm)
-            }}
-          >
-            <h3>Crear</h3>
-            <input placeholder="username" value={userCreateForm.username} onChange={(e) => setUserCreateForm((v) => ({ ...v, username: e.target.value }))} />
-            <input placeholder="email" type="email" value={userCreateForm.email} onChange={(e) => setUserCreateForm((v) => ({ ...v, email: e.target.value }))} />
-            <input placeholder="password" type="password" value={userCreateForm.password} onChange={(e) => setUserCreateForm((v) => ({ ...v, password: e.target.value }))} />
-            <button disabled={loading}>Post /usuarios</button>
-          </form>
-        </div>
-
-        <form
-          className="update-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            void callApi<User>('Update User', `/usuarios/${userId}`, 'PUT', userUpdateForm)
-          }}
-        >
-          <h3>Actualizar usuario</h3>
-          <div className="grid three">
-            <input placeholder="username" value={userUpdateForm.username} onChange={(e) => setUserUpdateForm((v) => ({ ...v, username: e.target.value }))} />
-            <input placeholder="email" type="email" value={userUpdateForm.email} onChange={(e) => setUserUpdateForm((v) => ({ ...v, email: e.target.value }))} />
-            <input placeholder="password" type="password" value={userUpdateForm.password} onChange={(e) => setUserUpdateForm((v) => ({ ...v, password: e.target.value }))} />
-          </div>
-          <button disabled={loading}>Put /usuarios/:id</button>
-        </form>
-      </section>
-
-      <section className="card">
-        <h2>🎯 Perfil Profesional</h2>
-        <textarea rows={4} value={perfilProfesional} onChange={(e) => setPerfilProfesional(e.target.value)} />
+        <h2>Tu Perfil Profesional</h2>
+        <textarea
+          rows={4}
+          value={perfilProfesional}
+          onChange={(e) => setPerfilProfesional(e.target.value)}
+          placeholder="Describe tu experiencia, stack y fortalezas..."
+        />
         <div className="row">
-          <button disabled={loading} onClick={() => void callApi<ProfessionalProfile>('Get Profile', '/usuarios/perfil', 'GET')}>
-            Get /usuarios/perfil
+          <button onClick={() => void onGetProfile()} disabled={loading}>
+            Cargar perfil
           </button>
-          <button disabled={loading} onClick={() => void callApi<ProfessionalProfile>('Update Profile', '/usuarios/perfil', 'PUT', { perfilProfesional })}>
-            Put /usuarios/perfil
+          <button onClick={() => void onUpdateProfile()} disabled={loading}>
+            Guardar perfil
           </button>
         </div>
+        {profileData && (
+          <p className="small">
+            Última actualización: {new Date(profileData.updatedAt).toLocaleString()}
+          </p>
+        )}
       </section>
 
       <section className="card">
-        <h2>🎤 Entrevistas</h2>
+        <h2>Iniciar Entrevista</h2>
         <div className="grid two">
-          <div>
-            <h3>Iniciar entrevista</h3>
-            <label>
-              Tipo
-              <select value={tipoEntrevista} onChange={(e) => setTipoEntrevista(e.target.value as 'TECNICA' | 'COMPORTAMENTAL' | 'MIXTA')}>
-                <option value="TECNICA">TECNICA</option>
-                <option value="COMPORTAMENTAL">COMPORTAMENTAL</option>
-                <option value="MIXTA">MIXTA</option>
-              </select>
-            </label>
-            <label>
-              Dificultad
-              <select value={nivelDificultad} onChange={(e) => setNivelDificultad(e.target.value as 'BASICO' | 'INTERMEDIO' | 'AVANZADO')}>
-                <option value="BASICO">BASICO</option>
-                <option value="INTERMEDIO">INTERMEDIO</option>
-                <option value="AVANZADO">AVANZADO</option>
-              </select>
-            </label>
-            <button disabled={loading} onClick={() => void callApi<Interview>('Start Interview', '/entrevistas/start', 'POST', { tipoEntrevista, nivelDificultad })}>
-              Post /entrevistas/start
-            </button>
-          </div>
-          <div>
-            <h3>Enviar respuesta</h3>
-            <input type="number" value={questionId} onChange={(e) => setQuestionId(Number(e.target.value))} />
-            <textarea rows={4} value={answerText} onChange={(e) => setAnswerText(e.target.value)} />
-            <button disabled={loading} onClick={() => void callApi<AnswerResponse>('Submit Answer', '/entrevistas/respuestas', 'POST', { idPregunta: questionId, respuesta: answerText })}>
-              Post /entrevistas/respuestas
-            </button>
-          </div>
+          <label>
+            Tipo de entrevista
+            <select
+              value={tipoEntrevista}
+              onChange={(e) =>
+                setTipoEntrevista(e.target.value as 'TECNICA' | 'COMPORTAMENTAL' | 'MIXTA')
+              }
+            >
+              <option value="TECNICA">Técnica</option>
+              <option value="COMPORTAMENTAL">Comportamental</option>
+              <option value="MIXTA">Mixta</option>
+            </select>
+          </label>
+
+          <label>
+            Nivel de dificultad
+            <select
+              value={nivelDificultad}
+              onChange={(e) =>
+                setNivelDificultad(e.target.value as 'BASICO' | 'INTERMEDIO' | 'AVANZADO')
+              }
+            >
+              <option value="BASICO">Básico</option>
+              <option value="INTERMEDIO">Intermedio</option>
+              <option value="AVANZADO">Avanzado</option>
+            </select>
+          </label>
         </div>
+
+        <button onClick={() => void onStartInterview()} disabled={loading}>
+          Iniciar entrevista
+        </button>
+
+        {interviewData && (
+          <div className="result">
+            <h3>{interviewData.title}</h3>
+            <p>{interviewData.description}</p>
+            <ul>
+              {interviewData.questions.map((q) => (
+                <li key={q.id}>
+                  <strong>#{q.orden}</strong> {q.content}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
 
       <section className="card">
-        <h2>⚠️ Pruebas de error</h2>
-        <div className="row wrap">
-          <button className="secondary" disabled={loading} onClick={() => void callApi<PagedResponse<User>>('Invalid Token', '/usuarios', 'GET', undefined, 'invalid_token_123')}>
-            Token inválido
-          </button>
-          <button className="secondary" disabled={loading} onClick={() => void callApi<User>('User Not Found', '/usuarios/999', 'GET')}>
-            Usuario no encontrado
-          </button>
-          <button className="secondary" disabled={loading} onClick={() => void callApi<User>('Duplicate User', '/auth/register', 'POST', registerForm)}>
-            Usuario duplicado
-          </button>
-          <button className="secondary" disabled={loading} onClick={() => void callApi<User>('Validation Error', '/auth/register', 'POST', { username: 'bob', email: 'invalid_email', password: 'pass123' })}>
-            Validación inválida
-          </button>
-          <button className="secondary" disabled={loading} onClick={() => void callApi<Interview>('Profile Missing', '/entrevistas/start', 'POST', { tipoEntrevista: 'TECNICA', nivelDificultad: 'INTERMEDIO' })}>
-            Perfil no completado
-          </button>
-        </div>
-      </section>
+        <h2>Responder Pregunta</h2>
+        <form onSubmit={onSubmitAnswer} className="stack">
+          <label>
+            Pregunta
+            <select
+              value={questionId}
+              onChange={(e) => setQuestionId(Number(e.target.value))}
+            >
+              {questionOptions.length === 0 && <option value={1}>Sin preguntas disponibles</option>}
+              {questionOptions.map((q) => (
+                <option key={q.id} value={q.id}>
+                  #{q.orden} - {q.content.slice(0, 60)}...
+                </option>
+              ))}
+            </select>
+          </label>
 
-      <section className="card output">
-        <h2>📤 Última respuesta</h2>
-        <p>
-          Acción: <strong>{lastAction || 'N/A'}</strong> · Status: <strong>{lastStatus ?? 'N/A'}</strong> · Estado: <strong>{loading ? 'Cargando...' : 'Listo'}</strong>
-        </p>
-        <pre>{prettyResponse || 'Aún no hay respuesta.'}</pre>
+          <label>
+            Tu respuesta
+            <textarea
+              required
+              rows={5}
+              value={answerText}
+              onChange={(e) => setAnswerText(e.target.value)}
+              placeholder="Escribe tu respuesta aquí..."
+            />
+          </label>
+
+          <button disabled={loading || questionOptions.length === 0}>Enviar respuesta</button>
+        </form>
+
+        {lastAnswer && (
+          <p className="small">
+            Respuesta enviada correctamente. Tiempo registrado: {lastAnswer.tiempoRespuesta}s.
+          </p>
+        )}
       </section>
     </main>
   )
