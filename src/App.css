@@ -1,0 +1,142 @@
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.25rem;
+  display: grid;
+  gap: 1rem;
+}
+
+header {
+  background: linear-gradient(135deg, #1f2937, #111827);
+  color: #f9fafb;
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+header p {
+  margin-top: 0.45rem;
+  color: #d1d5db;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+.card h2 {
+  margin: 0 0 0.85rem;
+  font-size: 1.15rem;
+}
+
+h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: #111827;
+}
+
+.grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.grid.two {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.grid.three {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+form,
+.card > div {
+  display: grid;
+  gap: 0.5rem;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  background: #fff;
+}
+
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+button {
+  border: 0;
+  background: #2563eb;
+  color: #fff;
+  padding: 0.56rem 0.9rem;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #4b5563;
+}
+
+button.danger {
+  background: #dc2626;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.row.wrap {
+  flex-wrap: wrap;
+}
+
+.update-form {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.output pre {
+  margin: 0.7rem 0 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 0.8rem;
+  border-radius: 10px;
+  overflow: auto;
+  max-height: 320px;
+}
+
+@media (max-width: 640px) {
+  .row {
+    flex-direction: column;
+  }
+}
