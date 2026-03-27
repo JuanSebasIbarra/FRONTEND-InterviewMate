@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import { RouterProvider } from 'react-router-dom'
+import { appRouter } from './router'
 import './App.css'
 
 type User = {
@@ -63,7 +65,7 @@ type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
 const TOKEN_STORAGE_KEY = 'interviewmate_token'
 
-function App() {
+export function LegacyApp() {
   const [token, setToken] = useState(localStorage.getItem(TOKEN_STORAGE_KEY) ?? '')
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
@@ -465,6 +467,10 @@ function App() {
       </section>
     </main>
   )
+}
+
+function App() {
+  return <RouterProvider router={appRouter} />
 }
 
 export default App
