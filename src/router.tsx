@@ -5,15 +5,14 @@ import DashboardPage from './pages/DashboardPage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import { isAuthenticated } from './lib/auth'
 
 type PrivateRouteProps = {
   children: ReactElement
 }
 
 function PrivateRoute({ children }: PrivateRouteProps) {
-  // Plantilla sin autenticación real.
-  // Cambia esta constante por tu lógica de auth cuando la implementes.
-  const hasAccess = true
+  const hasAccess = isAuthenticated()
 
   return hasAccess ? children : <Navigate to="/login" replace />
 }
