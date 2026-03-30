@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { RouterProvider } from 'react-router-dom'
 import { appRouter } from './router'
+import { API_BASE_URL, buildApiUrl } from './lib/api'
 import './App.css'
 
 type User = {
@@ -62,7 +63,6 @@ type ApiError = {
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
 const TOKEN_STORAGE_KEY = 'interviewmate_token'
 
 export function LegacyApp() {
@@ -117,7 +117,7 @@ export function LegacyApp() {
     }
 
     try {
-      const response = await fetch(`${BASE_URL}${path}`, {
+      const response = await fetch(buildApiUrl(path), {
         method,
         headers,
         body: body ? JSON.stringify(body) : undefined,
@@ -148,7 +148,7 @@ export function LegacyApp() {
     try {
       setLoading(true)
       setError('')
-      const response = await fetch(`${BASE_URL}/auth/me`, {
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${tokenValue}` },
       })
 
