@@ -2,9 +2,11 @@ import { Navigate, createBrowserRouter } from 'react-router-dom'
 import type { ReactElement } from 'react'
 import Main from './MainLayout'
 import DashboardPage from './pages/DashboardPage'
+import InterviewSessionPage from './pages/InterviewSessionPage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import SettingsPage from './pages/SettingsPage'
 import { isAuthenticated } from './lib/auth'
 
 type PrivateRouteProps = {
@@ -39,6 +41,22 @@ export const appRouter = createBrowserRouter([
         element: (
           <PrivateRoute>
             <DashboardPage />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: 'dashboard/session/:sessionId',
+        element: (
+          <PrivateRoute>
+            <InterviewSessionPage />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: 'settings',
+        element: (
+          <PrivateRoute>
+            <SettingsPage />
           </PrivateRoute>
         ),
       },

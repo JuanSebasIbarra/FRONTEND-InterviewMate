@@ -700,3 +700,62 @@ button:disabled {
   border-top: 1px solid #e2e8f0;
   margin: 0.3rem 0;
 }
+
+.dashboard-create-card {
+  margin-top: 0.6rem;
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 12px;
+  padding: 0.8rem;
+}
+
+.dashboard-create-card h3 {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+}
+
+.session-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.session-header h2 {
+  margin-top: 0;
+}
+
+.session-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 860px) {
+  .session-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.session-question-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.session-question-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.85rem;
+  background: #fafcff;
+}
+
+.session-question-item h4 {
+  margin-top: 0;
+  margin-bottom: 0.6rem;
+}
+
+.settings-page {
+  max-width: 760px;
+  margin: 0 auto;
+}
