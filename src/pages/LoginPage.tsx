@@ -2,16 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import heroLogo from '../assets/hero.png'
-import { saveAuthToken } from '../lib/auth'
-import { buildApiUrl } from '../lib/api'
-
-type LoginResponse = {
-  token: string
-}
-
-type ApiError = {
-  message?: string
-}
+import { loginUser } from '../controllers/authController'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -25,25 +16,7 @@ function LoginPage() {
     setError('')
 
     try {
-      const response = await fetch(buildApiUrl('/auth/login'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
-
-      const raw = await response.text()
-      const data = raw ? (JSON.parse(raw) as LoginResponse | ApiError) : {}
-
-      if (!response.ok) {
-        throw new Error((data as ApiError).message ?? 'No se pudo iniciar sesión.')
-      }
-
-      const token = (data as LoginResponse).token
-      if (!token) {
-        throw new Error('La respuesta no incluyó token de sesión.')
-      }
-
-      saveAuthToken(token)
+      await loginUser(form)
       navigate('/dashboard', { replace: true })
     } catch (submitError) {
       setError((submitError as Error).message)

@@ -2,11 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import heroLogo from '../assets/hero.png'
-import { buildApiUrl } from '../lib/api'
-
-type ApiError = {
-  message?: string
-}
+import { registerUser } from '../controllers/authController'
 
 function RegisterPage() {
   const navigate = useNavigate()
@@ -33,22 +29,12 @@ function RegisterPage() {
     setLoading(true)
 
     try {
-      const response = await fetch(buildApiUrl('/auth/register'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: form.username,
-          email: form.email,
-          password: form.password,
-        }),
+      await registerUser({
+        username: form.username,
+        email: form.email,
+        password: form.password,
+        confirmPassword: form.confirmPassword,
       })
-
-      const raw = await response.text()
-      const data = raw ? (JSON.parse(raw) as ApiError) : {}
-
-      if (!response.ok) {
-        throw new Error(data.message ?? 'No se pudo completar el registro.')
-      }
 
       setSuccess('Registro exitoso. Ahora inicia sesión.')
       setForm({ username: '', email: '', password: '', confirmPassword: '' })
