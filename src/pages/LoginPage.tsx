@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import heroLogo from '../assets/hero.png'
+import heroLogo from '../assets/interviewmate-logo.svg'
 import { loginUser } from '../controllers/authController'
 
 function LoginPage() {

@@ -1,0 +1,12 @@
+<svg width="640" height="220" viewBox="0 0 640 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="220" rx="24" fill="#F8FAFC"/>
+  <g transform="translate(40,34)">
+    <circle cx="36" cy="34" r="16" stroke="#243447" stroke-width="8" fill="none"/>
+    <path d="M20 110V74c0-12 10-22 22-22h0" stroke="#243447" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="140" cy="34" r="16" stroke="#4B8FA5" stroke-width="8" fill="none"/>
+    <path d="M124 110V74c0-12 10-22 22-22h0" stroke="#4B8FA5" stroke-width="8" stroke-linecap="round"/>
+    <path d="M58 34c10-12 24-18 40-18s30 6 40 18" stroke="#4B8FA5" stroke-width="8" stroke-linecap="round"/>
+    <path d="M68 36v44l20-18 20 18V36" stroke="#4B8FA5" stroke-width="8" stroke-linejoin="round" fill="none"/>
+  </g>
+  <text x="230" y="128" font-family="Inter,Segoe UI,Arial,sans-serif" font-weight="700" font-size="74" fill="#243447">InterviewMate</text>
+</svg>

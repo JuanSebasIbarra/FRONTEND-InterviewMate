@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { clearAuthToken, isAuthenticated } from './lib/auth'
+import heroLogo from './assets/interviewmate-icon.svg'
 
 function Main() {
   const navigate = useNavigate()
@@ -28,14 +29,17 @@ function Main() {
   return (
     <div className="layout">
       <header className="layout__header">
-        <h1>InterviewMate</h1>
+        <Link
+          to={authenticated ? '/dashboard' : '/'}
+          className="brand-link"
+          aria-label="Ir a inicio de InterviewMate"
+        >
+          <img src={heroLogo} alt="InterviewMate" className="brand-link__logo" />
+          <span className="brand-link__text">InterviewMate</span>
+        </Link>
+
         <nav className="layout__nav">
-          {!authenticated ? (
-            <>
-              <NavLink to="/login">Login</NavLink>
-              <NavLink to="/register">Register</NavLink>
-            </>
-          ) : (
+          {authenticated && (
             <div className="settings-menu" ref={menuRef}>
               <button
                 type="button"

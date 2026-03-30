@@ -1,11 +1,16 @@
 import { Link } from 'react-router-dom'
-import heroLogo from '../assets/hero.png'
+import heroLogo from '../assets/interviewmate-logo.svg'
+import heroIcon from '../assets/interviewmate-icon.svg'
 
 function LandingPage() {
   return (
     <section className="marketing-page">
       <header className="marketing-hero">
         <div className="marketing-hero__text">
+          <Link className="brand-chip" to="/">
+            <img src={heroIcon} alt="InterviewMate" />
+            <span>InterviewMate</span>
+          </Link>
           <span className="marketing-badge">Prepárate mejor para tus entrevistas</span>
           <h2>Convierte cada simulación en una oferta real de trabajo</h2>
           <p>

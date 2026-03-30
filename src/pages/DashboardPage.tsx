@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import heroLogo from '../assets/interviewmate-icon.svg'
 import {
   loadDashboardData,
   startNewInterview,
@@ -68,6 +69,15 @@ function DashboardPage() {
     <div className="dashboard">
       <section className="dashboard__left">
         <div className="dashboard__stats">
+          <button
+            type="button"
+            className="brand-chip brand-chip--dashboard"
+            onClick={() => navigate('/dashboard')}
+          >
+            <img src={heroLogo} alt="InterviewMate" />
+            <span>InterviewMate</span>
+          </button>
+
           <h2 className="dashboard__section-title">Resumen</h2>
 
           {error && <p className="alert error">{error}</p>}
