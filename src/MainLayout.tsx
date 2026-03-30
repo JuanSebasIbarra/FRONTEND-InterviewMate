@@ -66,7 +66,7 @@ function Main() {
                     className="dropdown-item"
                     role="menuitem"
                     onClick={() => {
-                      alert('Próximamente: editar perfil profesional.')
+                      navigate('/settings')
                       setMenuOpen(false)
                     }}
                   >
@@ -77,7 +77,7 @@ function Main() {
                     className="dropdown-item"
                     role="menuitem"
                     onClick={() => {
-                      alert('Próximamente: cambiar contraseña.')
+                      navigate('/settings')
                       setMenuOpen(false)
                     }}
                   >
