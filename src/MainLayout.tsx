@@ -1,35 +1,100 @@
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { clearAuthToken, isAuthenticated } from './lib/auth'
 
 function Main() {
   const navigate = useNavigate()
   const authenticated = isAuthenticated()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const onLogout = () => {
     clearAuthToken()
-    navigate('/', { replace: true })
+    setMenuOpen(false)
+    navigate('/login', { replace: true })
   }
+
+  // Cierra el menú al hacer clic fuera de él
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
 
   return (
     <div className="layout">
       <header className="layout__header">
         <h1>InterviewMate</h1>
         <nav className="layout__nav">
-          <NavLink to="/" end>
-            Landing
-          </NavLink>
           {!authenticated ? (
             <>
               <NavLink to="/login">Login</NavLink>
               <NavLink to="/register">Register</NavLink>
             </>
           ) : (
-            <>
-              <NavLink to="/dashboard">Dashboard</NavLink>
-              <button type="button" className="layout__logout" onClick={onLogout}>
-                Logout
+            <div className="settings-menu" ref={menuRef}>
+              <button
+                type="button"
+                className="settings-btn"
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-expanded={menuOpen}
+                aria-haspopup="true"
+              >
+                Ajustes <span className="settings-btn__icon">{menuOpen ? '✕' : '☰'}</span>
               </button>
-            </>
+
+              {menuOpen && (
+                <div className="settings-dropdown" role="menu">
+                  <button
+                    type="button"
+                    className="dropdown-item"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      navigate('/dashboard')
+                    }}
+                  >
+                    🏠 Dashboard
+                  </button>
+                  <hr className="dropdown-divider" />
+                  <button
+                    type="button"
+                    className="dropdown-item"
+                    role="menuitem"
+                    onClick={() => {
+                      alert('Próximamente: editar perfil profesional.')
+                      setMenuOpen(false)
+                    }}
+                  >
+                    ✏️ Editar perfil
+                  </button>
+                  <button
+                    type="button"
+                    className="dropdown-item"
+                    role="menuitem"
+                    onClick={() => {
+                      alert('Próximamente: cambiar contraseña.')
+                      setMenuOpen(false)
+                    }}
+                  >
+                    🔒 Cambiar contraseña
+                  </button>
+                  <hr className="dropdown-divider" />
+                  <button
+                    type="button"
+                    className="dropdown-item dropdown-item--danger"
+                    role="menuitem"
+                    onClick={onLogout}
+                  >
+                    🚪 Cerrar sesión
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </nav>
       </header>
