@@ -62,7 +62,18 @@ function Main() {
                       navigate('/dashboard')
                     }}
                   >
-                    🏠 Dashboard
+                      Dashboard
+                  </button>
+                  <button
+                    type="button"
+                    className="dropdown-item"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      navigate('/study')
+                    }}
+                  >
+                      Modo estudio
                   </button>
                   <hr className="dropdown-divider" />
                   <button
@@ -74,18 +85,18 @@ function Main() {
                       setMenuOpen(false)
                     }}
                   >
-                    ✏️ Editar perfil
+                      Editar perfil
                   </button>
                   <button
                     type="button"
                     className="dropdown-item"
                     role="menuitem"
                     onClick={() => {
-                      navigate('/settings')
+                        navigate('/settings?section=security')
                       setMenuOpen(false)
                     }}
                   >
-                    🔒 Cambiar contraseña
+                      Cambiar contraseña
                   </button>
                   <hr className="dropdown-divider" />
                   <button
@@ -94,7 +105,7 @@ function Main() {
                     role="menuitem"
                     onClick={onLogout}
                   >
-                    🚪 Cerrar sesión
+                      Cerrar sesión
                   </button>
                 </div>
               )}
