@@ -811,3 +811,250 @@ button:disabled {
   max-width: 760px;
   margin: 0 auto;
 }
+  /* ── Google Account-style Settings Layout ── */
+  .settings-google {
+    max-width: 960px;
+    margin: 0 auto;
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .settings-loading {
+    text-align: center;
+    color: #64748b;
+    padding: 2rem 0;
+  }
+
+  /* Profile header card */
+  .settings-profile-header {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 2rem 1.5rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    text-align: center;
+  }
+
+  .settings-avatar-large {
+    width: 88px !important;
+    height: 88px !important;
+    font-size: 2rem !important;
+  }
+
+  .settings-profile-name {
+    margin: 0.4rem 0 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .settings-profile-email {
+    margin: 0;
+    font-size: 0.88rem;
+    color: #64748b;
+  }
+
+  /* Two-column body */
+  .settings-body {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+
+  /* Sidebar navigation */
+  .settings-sidebar {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    padding: 0.5rem 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .settings-sidebar-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-left: 3px solid transparent;
+    color: #374151;
+    padding: 0.8rem 1.25rem;
+    font-size: 0.92rem;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+  }
+
+  .settings-sidebar-item:hover {
+    background: #f1f5f9;
+    filter: none;
+  }
+
+  .settings-sidebar-item--active {
+    background: #eff6ff;
+    border-left-color: #2563eb;
+    color: #1d4ed8;
+    font-weight: 600;
+  }
+
+  /* Content panel */
+  .settings-content {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 1.75rem;
+  }
+
+  .settings-content h3 {
+    margin-top: 0;
+    margin-bottom: 0.25rem;
+    font-size: 1.1rem;
+    color: #0f172a;
+  }
+
+  .settings-content-subtitle {
+    margin: 0 0 1.5rem;
+    color: #64748b;
+    font-size: 0.87rem;
+  }
+
+  /* CV drop area */
+  .cv-drop-area {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    background: #f8fafc;
+  }
+
+  .cv-drop-name {
+    margin: 0;
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 0.95rem;
+  }
+
+  .cv-drop-placeholder {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 0.9rem;
+  }
+
+  /* Responsive: stack sidebar on narrow screens */
+  @media (max-width: 720px) {
+    .settings-body {
+      grid-template-columns: 1fr;
+    }
+
+    .settings-sidebar {
+      flex-direction: row;
+      overflow-x: auto;
+      padding: 0;
+    }
+
+    .settings-sidebar-item {
+      border-left: none;
+      border-bottom: 3px solid transparent;
+      padding: 0.65rem 1rem;
+      white-space: nowrap;
+      flex: 1;
+      text-align: center;
+    }
+
+    .settings-sidebar-item--active {
+      border-bottom-color: #2563eb;
+      border-left: none;
+    }
+  }
+
+  /* Avatar row inside form (personal section) */
+  .settings-avatar-row {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.settings-avatar-preview {
+  width: 96px;
+  height: 96px;
+  border-radius: 999px;
+  border: 2px solid #dbeafe;
+  background: #eff6ff;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #1d4ed8;
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.settings-avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.study-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.study-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 860px) {
+  .study-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.study-divider {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 0.2rem 0;
+}
+
+.study-difficulty-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.85rem;
+}
+
+.study-difficulty-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.8rem;
+  background: #fbfdff;
+}
+
+.study-difficulty-card h4 {
+  margin-top: 0;
+}
+
+.study-badge {
+  display: inline-flex;
+  background: #e0e7ff;
+  color: #3730a3;
+  border-radius: 999px;
+  padding: 0.12rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.study-interview-cta {
+  margin-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1rem;
+  display: grid;
+  gap: 0.65rem;
+  max-width: 360px;
+}
