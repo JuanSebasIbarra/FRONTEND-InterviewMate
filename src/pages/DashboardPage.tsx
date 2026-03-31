@@ -132,6 +132,10 @@ function DashboardPage() {
           Empezar nueva entrevista
         </button>
 
+        <button className="btn-new-interview" type="button" onClick={() => navigate('/study')}>
+          Ir a modo estudio
+        </button>
+
         {showCreateForm && (
           <div className="dashboard-create-card">
             <h3>Nueva entrevista</h3>
