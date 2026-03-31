@@ -7,6 +7,7 @@ import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import SettingsPage from './pages/SettingsPage'
+import StudyPage from './pages/StudyPage'
 import { isAuthenticated } from './lib/auth'
 
 type PrivateRouteProps = {
@@ -57,6 +58,14 @@ export const appRouter = createBrowserRouter([
         element: (
           <PrivateRoute>
             <SettingsPage />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: 'study',
+        element: (
+          <PrivateRoute>
+            <StudyPage />
           </PrivateRoute>
         ),
       },
