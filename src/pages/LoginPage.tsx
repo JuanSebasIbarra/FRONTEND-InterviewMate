@@ -3,12 +3,17 @@ import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import heroLogo from '../assets/interviewmate-logo.svg'
 import { loginUser } from '../controllers/authController'
+import { getGoogleOAuthStartUrl } from '../services/authService'
 
 function LoginPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({ username: '', password: '' })
+
+  const onGoogleLogin = () => {
+    window.location.assign(getGoogleOAuthStartUrl())
+  }
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -62,6 +67,10 @@ function LoginPage() {
 
           <button type="submit" disabled={loading}>
             {loading ? 'Ingresando...' : 'Entrar'}
+          </button>
+
+          <button type="button" onClick={onGoogleLogin} disabled={loading}>
+            Continuar con Google
           </button>
         </form>
 
