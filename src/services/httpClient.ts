@@ -2,6 +2,8 @@ import { getAuthToken } from '../lib/auth'
 import { buildApiUrl } from '../lib/api'
 import type { ApiErrorPayload, ApiResponse } from '../models/api'
 
+const useCredentials = String(import.meta.env.VITE_USE_CREDENTIALS ?? '').toLowerCase() === 'true'
+
 function tryParseJson(raw: string) {
   if (!raw) return null
   try {
@@ -46,6 +48,7 @@ export async function httpRequest<T>(path: string, init?: RequestInit): Promise<
   const response = await fetch(buildApiUrl(path), {
     ...init,
     headers,
+    credentials: useCredentials ? 'include' : init?.credentials,
   })
 
   const raw = await response.text()
