@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { RouterProvider } from 'react-router-dom'
 import { appRouter } from './router'
+import { clearAuthToken, getAuthToken, saveAuthToken } from './lib/auth'
 import { API_BASE_URL, buildApiUrl } from './lib/api'
 import './App.css'
 
@@ -63,10 +64,8 @@ type ApiError = {
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
-const TOKEN_STORAGE_KEY = 'interviewmate_token'
-
 export function LegacyApp() {
-  const [token, setToken] = useState(localStorage.getItem(TOKEN_STORAGE_KEY) ?? '')
+  const [token, setToken] = useState(getAuthToken())
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
   const [loading, setLoading] = useState(false)
@@ -153,7 +152,7 @@ export function LegacyApp() {
       })
 
       if (!response.ok) {
-        localStorage.removeItem(TOKEN_STORAGE_KEY)
+        clearAuthToken()
         setToken('')
         setCurrentUser(null)
         return
@@ -184,7 +183,7 @@ export function LegacyApp() {
       const data = await callApi<LoginResponse>('/auth/login', 'POST', loginForm)
       if (!data?.token) return
       setToken(data.token)
-      localStorage.setItem(TOKEN_STORAGE_KEY, data.token)
+      saveAuthToken(data.token, { expiresAt: data.expiresAt })
       await loadCurrentUser(data.token)
       setSuccess('Inicio de sesión exitoso.')
     } catch {
@@ -193,7 +192,7 @@ export function LegacyApp() {
   }
 
   const onLogout = () => {
-    localStorage.removeItem(TOKEN_STORAGE_KEY)
+    clearAuthToken()
     setToken('')
     setCurrentUser(null)
     setProfileData(null)
