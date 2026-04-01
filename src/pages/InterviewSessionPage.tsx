@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
+  finishInterviewSession,
   loadInterviewSessionData,
   submitQuestionAnswer,
   type InterviewSessionData,
@@ -13,6 +14,7 @@ function InterviewSessionPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [submittingQuestionId, setSubmittingQuestionId] = useState('')
+  const [finishingSession, setFinishingSession] = useState(false)
   const [answers, setAnswers] = useState<Record<string, string>>({})
 
   useEffect(() => {
@@ -56,6 +58,20 @@ function InterviewSessionPage() {
     }
   }
 
+  const onFinishSession = async () => {
+    if (!sessionId) return
+    setFinishingSession(true)
+    setError('')
+    try {
+      await finishInterviewSession(sessionId)
+      await refresh(sessionId)
+    } catch (finishError) {
+      setError((finishError as Error).message)
+    } finally {
+      setFinishingSession(false)
+    }
+  }
+
   if (loading) {
     return (
       <section className="page-card">
@@ -83,6 +99,13 @@ function InterviewSessionPage() {
           <strong>{data.session.status}</strong>
         </p>
         <div className="page-actions">
+          <button
+            type="button"
+            disabled={finishingSession || pendingQuestions.length > 0}
+            onClick={() => void onFinishSession()}
+          >
+            {finishingSession ? 'Finalizando...' : 'Finalizar sesión'}
+          </button>
           <button type="button" onClick={() => navigate('/dashboard')}>
             Volver al dashboard
           </button>
