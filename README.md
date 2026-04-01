@@ -1,73 +1,70 @@
-# React + TypeScript + Vite
+# InterviewMate Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend en React + TypeScript + Vite para InterviewMate.
 
-Currently, two official plugins are available:
+## Configuración rápida
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Copia variables de entorno:
 
-## React Compiler
+- `cp .env.example .env`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+2. Define la URL del backend en `.env`:
 
-## Expanding the ESLint configuration
+- Local: `VITE_API_URL=http://localhost:8080`
+- Render: `VITE_API_URL=https://interviewmate-0-0-5-alpha.onrender.com`
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+3. Instala dependencias y ejecuta:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- `npm install`
+- `npm run dev`
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Variables de entorno frontend
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- `VITE_API_URL`: base URL del backend.
+- `VITE_USE_CREDENTIALS`: `true/false` para enviar cookies cross-site (si usas sesión/cookies).
+- `VITE_GOOGLE_OAUTH_START_PATH`: endpoint de inicio OAuth2 (default: `/auth/oauth2/google`).
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Integración backend esperada
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Auth
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- `POST /auth/register` (sin wrapper `ApiResponse<T>`)
+- `POST /auth/login` (sin wrapper `ApiResponse<T>`)
+- `GET /auth/me` (protegido con `Authorization: Bearer <jwt>`)
+
+### Study
+
+- `POST /study/start`
+- `POST /study/generate-questions`
+- `GET /study/{id}`
+
+### Interview
+
+- `POST /api/v1/interview-templates`
+- `GET /api/v1/interview-templates`
+- `PATCH /api/v1/interview-templates/{templateId}`
+- `PATCH /api/v1/interview-templates/{templateId}/status?newStatus=ACTIVE`
+- `POST /api/v1/sessions`
+- `PATCH /api/v1/sessions/{sessionId}/begin`
+- `PATCH /api/v1/sessions/{sessionId}/complete`
+- `GET /api/v1/questions/session/{sessionId}`
+- `PATCH /api/v1/questions/{questionId}/answer`
+- `GET /api/v1/results/session/{sessionId}`
+
+## OAuth2 Google
+
+El login con Google redirige a:
+
+- `${VITE_API_URL}${VITE_GOOGLE_OAUTH_START_PATH}`
+
+El backend gestiona el resto del flujo OAuth2.
+
+## Deploy en Vercel
+
+Incluye configuración SPA en [vercel.json](vercel.json).
+
+Para evitar CORS:
+
+- Verifica que `VITE_API_URL` apunte al backend correcto.
+- En backend, configura `CORS_ALLOWED_ORIGINS` con tu dominio Vercel exacto.
+- Usa `Authorization: Bearer <jwt>` en endpoints protegidos.
