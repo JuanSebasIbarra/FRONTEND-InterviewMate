@@ -132,7 +132,7 @@ function DashboardPage() {
           Empezar nueva entrevista
         </button>
 
-        <button className="btn-new-interview" type="button" onClick={() => navigate('/study')}>
+        <button className="btn-new-interview" type="button" onClick={() => navigate('/study/live')}>
           Ir a modo estudio
         </button>
 
