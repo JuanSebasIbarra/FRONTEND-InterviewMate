@@ -11,3 +11,19 @@ export function createTemplate(request: CreateInterviewTemplateRequest) {
     body: JSON.stringify(request),
   })
 }
+
+export function updateTemplate(templateId: string, request: Partial<CreateInterviewTemplateRequest>) {
+  return httpRequest<InterviewTemplate>(`/api/v1/interview-templates/${templateId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(request),
+  })
+}
+
+export function updateTemplateStatus(templateId: string, newStatus: 'DRAFT' | 'ACTIVE' | 'ARCHIVED') {
+  return httpRequest<InterviewTemplate>(
+    `/api/v1/interview-templates/${templateId}/status?newStatus=${encodeURIComponent(newStatus)}`,
+    {
+      method: 'PATCH',
+    },
+  )
+}

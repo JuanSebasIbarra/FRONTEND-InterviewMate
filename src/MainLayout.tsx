@@ -70,7 +70,7 @@ function Main() {
                     role="menuitem"
                     onClick={() => {
                       setMenuOpen(false)
-                      navigate('/study')
+                      navigate('/study/live')
                     }}
                   >
                       Modo estudio

@@ -7,7 +7,7 @@ export async function loginUser(request: LoginRequest) {
   if (!response.token) {
     throw new Error('La respuesta no incluyó token de sesión.')
   }
-  saveAuthToken(response.token)
+  saveAuthToken(response.token, { expiresAt: response.expiresAt })
   return response
 }
 

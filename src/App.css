@@ -1058,3 +1058,138 @@ button:disabled {
   gap: 0.65rem;
   max-width: 360px;
 }
+
+.study-voice-page {
+  gap: 1.25rem;
+}
+
+.study-voice-grid {
+  align-items: start;
+}
+
+.study-voice-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(250px, 0.8fr);
+  gap: 1rem;
+  align-items: center;
+  background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%);
+  border-color: #c7d2fe;
+}
+
+.study-voice-hero h2 {
+  margin: 0.45rem 0;
+}
+
+.study-voice-hero__badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.study-voice-hero__status {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.study-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.5rem 0.9rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.study-status-pill.is-ready {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.study-status-pill.is-muted {
+  background: #e5e7eb;
+  color: #475569;
+}
+
+.study-status-pill.is-idle {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.study-status-pill.is-live {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.study-voice-panel {
+  min-height: 100%;
+}
+
+.study-mic-card {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+  border-radius: 14px;
+  border: 1px dashed #93c5fd;
+  background: #f8fbff;
+}
+
+.study-mic-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  font-weight: 700;
+}
+
+.study-mic-button.is-live {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.14);
+}
+
+.study-mic-button__icon {
+  font-size: 1.1rem;
+}
+
+.study-secondary-button {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.study-insight-box {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.9rem;
+  background: #fafcff;
+}
+
+.study-insight-box strong {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.study-insight-box p {
+  margin: 0;
+  color: #334155;
+  white-space: pre-wrap;
+}
+
+.study-session-summary__grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+@media (max-width: 860px) {
+  .study-voice-hero {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,5 +1,5 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom'
-import type { ReactElement } from 'react'
+import PrivateRoute from './components/PrivateRoute'
 import Main from './MainLayout'
 import DashboardPage from './pages/DashboardPage'
 import InterviewSessionPage from './pages/InterviewSessionPage'
@@ -7,18 +7,7 @@ import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import SettingsPage from './pages/SettingsPage'
-import StudyPage from './pages/StudyPage'
-import { isAuthenticated } from './lib/auth'
-
-type PrivateRouteProps = {
-  children: ReactElement
-}
-
-function PrivateRoute({ children }: PrivateRouteProps) {
-  const hasAccess = isAuthenticated()
-
-  return hasAccess ? children : <Navigate to="/login" replace />
-}
+import StudyVoicePage from './pages/StudyVoicePage'
 
 export const appRouter = createBrowserRouter([
   {
@@ -63,9 +52,13 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: 'study',
+        element: <Navigate to="/study/live" replace />,
+      },
+      {
+        path: 'study/live',
         element: (
           <PrivateRoute>
-            <StudyPage />
+            <StudyVoicePage />
           </PrivateRoute>
         ),
       },
