@@ -6,6 +6,7 @@ import {
   startInterviewFromStudy,
   startStudySession,
 } from '../controllers/studyController'
+import { transcribeAudio } from '../services/studyService'
 import type { InterviewType } from '../models/interview'
 import type { StudyDifficulty, StudyQuestion, StudyQuestionType, StudySession } from '../models/study'
 
@@ -67,7 +68,10 @@ function QuestionCard({ question }: { question: StudyQuestion }) {
 // ── Página principal ──────────────────────────────────────────────────────
 function StudyVoicePage() {
   const navigate = useNavigate()
-  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
+    const recognitionRef   = useRef<SpeechRecognitionInstance | null>(null)
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+    const mediaStreamRef   = useRef<MediaStream | null>(null)
+    const audioChunksRef   = useRef<Blob[]>([])
 
   const [transcript, setTranscript]           = useState('')
   const [interimTranscript, setInterimTranscript] = useState('')
@@ -78,14 +82,19 @@ function StudyVoicePage() {
   const [loading, setLoading]                     = useState(false)
   const [startingInterview, setStartingInterview] = useState(false)
   const [listening, setListening]                 = useState(false)
-  const [error, setError]                         = useState('')
-  const [success, setSuccess]                     = useState('')
+    const [isTranscribing, setIsTranscribing]       = useState(false)
+    const [error, setError]                         = useState('')
+    const [success, setSuccess]                     = useState('')
 
   const speechRecognitionCtor =
     typeof window !== 'undefined'
       ? (window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null)
       : null
-  const speechSupported = Boolean(speechRecognitionCtor)
+    const speechSupported        = Boolean(speechRecognitionCtor)
+    // MediaRecorder funciona en Firefox, Brave y Safari modernos
+    const mediaRecorderSupported = typeof MediaRecorder !== 'undefined' && !!navigator.mediaDevices?.getUserMedia
+    const useMediaRecorder       = !speechSupported && mediaRecorderSupported
+    const micAvailable           = speechSupported || mediaRecorderSupported
 
   const groupedByDifficulty = useMemo(() => {
     const base: Record<StudyDifficulty, StudyQuestion[]> = { BASIC: [], INTERMEDIATE: [], ADVANCED: [] }
@@ -95,11 +104,25 @@ function StudyVoicePage() {
 
   const finalTranscript = `${transcript} ${interimTranscript}`.trim()
 
-  useEffect(() => () => { recognitionRef.current?.abort() }, [])
+  // Cleanup al desmontar: abortar speech recognition y liberar el stream de audio
+  useEffect(() => () => {
+    recognitionRef.current?.abort()
+    if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current?.stop()
+    mediaStreamRef.current?.getTracks().forEach((t) => t.stop())
+  }, [])
 
   const resetMessages = () => { setError(''); setSuccess('') }
 
-  // ── SpeechRecognition ─────────────────────────────────────────────────
+  const stopMicrophone = () => {
+    recognitionRef.current?.stop()
+    if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current?.stop()
+    mediaStreamRef.current?.getTracks().forEach((t) => t.stop())
+    mediaStreamRef.current = null
+    setListening(false)
+    setInterimTranscript('')
+  }
+
+  // ── Web Speech API (Chrome / Edge) ────────────────────────────────────
   const buildRecognition = () => {
     if (!speechRecognitionCtor) throw new Error('Tu navegador no soporta reconocimiento de voz.')
     const r = new speechRecognitionCtor()
@@ -128,26 +151,103 @@ function StudyVoicePage() {
     return r
   }
 
+  // ── MediaRecorder (Firefox / Brave / Safari) ──────────────────────────
+  const startMediaRecorder = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('Tu navegador no permite acceder al micrófono en este contexto (se requiere HTTPS).')
+      return
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      mediaStreamRef.current = stream
+      audioChunksRef.current = []
+      const mimeType =
+        MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
+        MediaRecorder.isTypeSupported('audio/webm')             ? 'audio/webm'             :
+        MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')  ? 'audio/ogg;codecs=opus'  : ''
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data) }
+      recorder.onstart  = () => { setListening(true); setError('') }
+      recorder.onstop   = () => { setListening(false) }
+      recorder.onerror  = () => { setListening(false); setError('Error durante la grabación de audio.') }
+      mediaRecorderRef.current = recorder
+      recorder.start(200)
+    } catch (err) {
+      const name = (err as Error).name
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        setError('Permiso de micrófono denegado. Habilítalo en la configuración del navegador.')
+      } else {
+        setError('No se pudo acceder al micrófono: ' + (err as Error).message)
+      }
+    }
+  }
+
+  /**
+   * Detiene el MediaRecorder, ensambla el blob y lo envía al backend para
+   * transcripción. Resuelve con el texto resultante.
+   */
+  const stopRecorderAndTranscribe = (): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const recorder = mediaRecorderRef.current
+      if (!recorder || recorder.state === 'inactive') { resolve(finalTranscript); return }
+      recorder.onstop = async () => {
+        setListening(false)
+        mediaStreamRef.current?.getTracks().forEach((t) => t.stop())
+        mediaStreamRef.current = null
+        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' })
+        audioChunksRef.current = []
+        try   { resolve(await transcribeAudio(blob)) }
+        catch (e) { reject(e) }
+      }
+      recorder.stop()
+    })
+
+  // ── Toggle micrófono ──────────────────────────────────────────────────
   const onToggleMic = () => {
     resetMessages()
-    if (!speechSupported) { setError('Este navegador no soporta reconocimiento de voz. Escribe el texto manualmente.'); return }
-    if (listening) { recognitionRef.current?.stop(); return }
-    buildRecognition().start()
+    if (listening) { stopMicrophone(); return }
+    if (speechSupported)        { buildRecognition().start(); return }
+    if (mediaRecorderSupported) { void startMediaRecorder(); return }
+    setError('Tu navegador no soporta grabación de voz. Escribe el texto manualmente.')
   }
 
   const onClear = () => {
-    recognitionRef.current?.abort()
-    setListening(false); setTranscript(''); setInterimTranscript('')
+    stopMicrophone()
+    setTranscript(''); setInterimTranscript('')
     resetMessages()
   }
 
   // ── Handlers backend ─────────────────────────────────────────────────
   const onGenerateStudyMaterial = async () => {
-    const text = finalTranscript.trim()
-    if (!text) { setError('Habla unos segundos o escribe el contenido antes de generar material.'); return }
-    setLoading(true); resetMessages()
+    resetMessages()
+    let textToUse = finalTranscript.trim()
+
+    // Siempre apagar el micrófono antes de procesar
+    if (listening && useMediaRecorder && mediaRecorderRef.current?.state !== 'inactive') {
+      // Firefox/Brave: detener grabación → subir audio → transcribir
+      setIsTranscribing(true)
+      try {
+        textToUse = await stopRecorderAndTranscribe()
+        setTranscript(textToUse)
+        setInterimTranscript('')
+      } catch (err) {
+        setError('No se pudo transcribir el audio: ' + (err as Error).message)
+        setIsTranscribing(false)
+        return
+      }
+      setIsTranscribing(false)
+    } else if (listening) {
+      // Chrome/Edge: detener Web Speech API y usar el transcript acumulado
+      stopMicrophone()
+    }
+
+    if (!textToUse) {
+      setError('Habla unos segundos o escribe el contenido antes de generar material.')
+      return
+    }
+    setLoading(true)
     try {
-      const created   = await startStudySession({ topic: text, audioFile: '' })
+      const created   = await startStudySession({ topic: textToUse, audioFile: '' })
       const generated = await regenerateStudySessionQuestions(created.id)
       setSession(generated); setStudyIdToLoad(generated.id)
       setSuccess('Material de estudio generado a partir de tu transcripción.')
@@ -230,6 +330,8 @@ function StudyVoicePage() {
         .sv-pill-muted { background: #f5f5f4; color: #999; }
         .sv-pill-live  { background: #FEF2F2; color: #dc2626; }
         .sv-pill-idle  { background: #f5f5f4; color: #999; }
+          .sv-pill-media        { background: #EEF2FF; color: #4338CA; }
+          .sv-pill-transcribing { background: #FFF7ED; color: #c2410c; }
 
         /* MIC */
         .sv-mic-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0.75rem 0; }
@@ -366,11 +468,11 @@ function StudyVoicePage() {
             <div>
               <div className="sv-sidebar-label">Estado</div>
               <div className="sv-status-row">
-                <span className={`sv-pill ${speechSupported ? 'sv-pill-ready' : 'sv-pill-muted'}`}>
-                  {speechSupported ? 'Micrófono disponible' : 'Sin SpeechRecognition'}
+                <span className={`sv-pill ${speechSupported ? 'sv-pill-ready' : mediaRecorderSupported ? 'sv-pill-media' : 'sv-pill-muted'}`}>
+                  {speechSupported ? 'Web Speech API' : mediaRecorderSupported ? 'MediaRecorder' : 'Sin micrófono'}
                 </span>
-                <span className={`sv-pill ${listening ? 'sv-pill-live' : 'sv-pill-idle'}`}>
-                  {listening ? 'Escuchando' : 'Inactivo'}
+                <span className={`sv-pill ${isTranscribing ? 'sv-pill-transcribing' : listening ? 'sv-pill-live' : 'sv-pill-idle'}`}>
+                  {isTranscribing ? 'Transcribiendo…' : listening ? (useMediaRecorder ? 'Grabando' : 'Escuchando') : 'Inactivo'}
                 </span>
               </div>
             </div>
@@ -390,7 +492,13 @@ function StudyVoicePage() {
                 </svg>
               </button>
               <span className={`sv-mic-label ${listening ? 'sv-live' : ''}`}>
-                {listening ? 'Escuchando ahora… pulsa para detener' : 'Pulsa para dictar'}
+                {listening
+                  ? useMediaRecorder
+                    ? 'Grabando… pulsa para detener'
+                    : 'Escuchando… pulsa para detener'
+                  : micAvailable
+                    ? useMediaRecorder ? 'Pulsa para grabar' : 'Pulsa para dictar'
+                    : 'Escribe el texto manualmente'}
               </span>
             </div>
 
@@ -490,6 +598,11 @@ function StudyVoicePage() {
                   value={finalTranscript}
                   onChange={(e) => { setTranscript(e.target.value); setInterimTranscript('') }}
                 />
+                  {useMediaRecorder && !finalTranscript && (
+                    <p style={{ fontSize: 11, color: '#6366f1', marginTop: 8, fontWeight: 300 }}>
+                      🎙 Tu navegador usa grabación de audio. El texto se transcribirá automáticamente al pulsar «Detener y generar».
+                    </p>
+                  )}
               </div>
               <div className="sv-transcript-actions">
                 <button type="button" className="sv-btn-clear" onClick={onClear}>
@@ -499,9 +612,15 @@ function StudyVoicePage() {
                   type="button"
                   className="sv-btn-generate"
                   onClick={onGenerateStudyMaterial}
-                  disabled={loading || !finalTranscript.trim()}
+                    disabled={loading || isTranscribing || (!listening && !finalTranscript.trim())}
                 >
-                  {loading ? 'Generando…' : 'Generar material de estudio →'}
+                    {isTranscribing
+                      ? 'Transcribiendo audio…'
+                      : loading
+                        ? 'Generando…'
+                        : listening && useMediaRecorder
+                          ? 'Detener y generar →'
+                          : 'Generar material de estudio →'}
                 </button>
               </div>
             </div>
