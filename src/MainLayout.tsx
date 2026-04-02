@@ -1,13 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { clearAuthToken, isAuthenticated } from './lib/auth'
 import heroLogo from './assets/interviewmate-icon.svg'
 
 function Main() {
   const navigate = useNavigate()
+  const location = useLocation()
   const authenticated = isAuthenticated()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  const useNewInterfaceNavbar =
+    location.pathname.startsWith('/dashboard') ||
+    location.pathname.startsWith('/study/live') ||
+    location.pathname.startsWith('/settings')
 
   const onLogout = () => {
     clearAuthToken()
@@ -25,6 +31,10 @@ function Main() {
     document.addEventListener('mousedown', handleOutsideClick)
     return () => document.removeEventListener('mousedown', handleOutsideClick)
   }, [])
+
+  if (useNewInterfaceNavbar) {
+    return <Outlet />
+  }
 
   return (
     <div className="layout">

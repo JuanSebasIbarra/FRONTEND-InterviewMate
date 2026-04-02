@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {loadDashboardData,  startNewInterview,  type DashboardData,} from '../controllers/dashboardController'
+import { clearAuthToken } from '../lib/auth'
   
 
 import type { InterviewType } from '../models/interview'
@@ -40,11 +41,13 @@ const INTERVIEW_TYPE_LABELS: Record<string, string> = {
 
 function DashboardPage() {
   const navigate = useNavigate()
+  const menuRef = useRef<HTMLDivElement>(null)
   const [data, setData]               = useState<DashboardData | null>(null)
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState('')
   const [creating, setCreating]       = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [form, setForm] = useState({
     enterprise:  '',
     type:        'TECHNICAL' as InterviewType,
@@ -54,6 +57,16 @@ function DashboardPage() {
   })
 
   useEffect(() => { void loadData() }, [])
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('click', handleOutsideClick)
+    return () => document.removeEventListener('click', handleOutsideClick)
+  }, [])
 
   const loadData = async () => {
     setLoading(true)
@@ -85,6 +98,12 @@ function DashboardPage() {
     } finally {
       setCreating(false)
     }
+  }
+
+  const onLogout = () => {
+    clearAuthToken()
+    setMenuOpen(false)
+    navigate('/login', { replace: true })
   }
 
   const username         = data?.user?.username ?? ''
@@ -138,6 +157,46 @@ function DashboardPage() {
           border: 0.5px solid #ddd; cursor: pointer;
           flex-shrink: 0;
         }
+        .db-avatar-btn {
+          font-family: 'DM Sans', sans-serif;
+          transition: background 0.12s;
+        }
+        .db-avatar-btn:hover { background: #e9e7ff; }
+        .db-menu { position: relative; }
+        .db-menu-dropdown {
+          position: absolute;
+          top: calc(100% + 6px);
+          right: 0;
+          width: 190px;
+          background: #fff;
+          border: 0.5px solid #e5e5e5;
+          border-radius: 8px;
+          padding: 6px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+          z-index: 1000;
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+        .db-menu-item {
+          border: none;
+          background: transparent;
+          text-align: left;
+          width: 100%;
+          border-radius: 6px;
+          padding: 8px 10px;
+          color: #444;
+          font-size: 12px;
+          cursor: pointer;
+          font-family: 'DM Sans', sans-serif;
+        }
+        .db-menu-item:hover { background: #f5f5f4; }
+        .db-menu-divider {
+          border: none;
+          border-top: 0.5px solid #ececec;
+          margin: 3px 0;
+        }
+        .db-menu-item-danger { color: #dc2626; }
 
         /* ── BODY ── */
         .db-body {
@@ -353,7 +412,47 @@ function DashboardPage() {
                 {greeting}, <strong>{username}</strong>
               </span>
             )}
-            <div className="db-avatar" title={username}>{initials}</div>
+            <div className="db-menu" ref={menuRef}>
+              <button
+                type="button"
+                className="db-avatar db-avatar-btn"
+                title={username}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setMenuOpen((value) => !value)
+                }}
+                aria-label="Abrir menú"
+                aria-expanded={menuOpen}
+                aria-haspopup="true"
+              >
+                {initials}
+              </button>
+
+              {menuOpen && (
+                <div className="db-menu-dropdown" role="menu">
+                  <button
+                    type="button"
+                    className="db-menu-item"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      navigate('/settings')
+                    }}
+                  >
+                    Editar perfil
+                  </button>
+                  <hr className="db-menu-divider" />
+                  <button
+                    type="button"
+                    className="db-menu-item db-menu-item-danger"
+                    role="menuitem"
+                    onClick={onLogout}
+                  >
+                    Cerrar sesión
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
