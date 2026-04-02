@@ -67,6 +67,7 @@ export type InterviewResult = {
   id: string
   sessionId: string
   attemptNumber: number
+  type?: InterviewType
   generalFeedback?: string
   strengths?: string
   weaknesses?: string
