@@ -6,6 +6,7 @@ import {
   startInterviewFromStudy,
   startStudySession,
 } from '../controllers/studyController'
+import { saveStudyModuleToHistory } from '../lib/studyModulesHistory'
 import type { InterviewType } from '../models/interview'
 import type { StudyDifficulty, StudyQuestion, StudyQuestionType, StudySession } from '../models/study'
 
@@ -183,6 +184,7 @@ function StudyVoicePage() {
       const created   = await startStudySession({ topic: text, audioFile: '' })
       const generated = await regenerateStudySessionQuestions(created.id)
       setSession(generated); setStudyIdToLoad(generated.id)
+      saveStudyModuleToHistory(generated)
       setSuccess('Material de estudio generado a partir de tu transcripción.')
     } catch (err) {
       setError((err as Error).message)
@@ -198,6 +200,7 @@ function StudyVoicePage() {
     try {
       const loaded = await loadStudySession(id)
       setSession(loaded); setSuccess('Sesión cargada correctamente.')
+      saveStudyModuleToHistory(loaded)
     } catch (err) {
       setError((err as Error).message)
     } finally {
