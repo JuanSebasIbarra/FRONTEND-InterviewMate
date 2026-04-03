@@ -2,9 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {loadDashboardData,  startNewInterview,  type DashboardData,} from '../controllers/dashboardController'
 import { clearAuthToken } from '../lib/auth'
-  
-
-import type { InterviewType } from '../models/interview'
 
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
 
@@ -46,15 +43,7 @@ function DashboardPage() {
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState('')
   const [creating, setCreating]       = useState(false)
-  const [showCreateForm, setShowCreateForm] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [form, setForm] = useState({
-    enterprise:  '',
-    type:        'TECHNICAL' as InterviewType,
-    position:    '',
-    workingArea: '',
-    description: '',
-  })
 
   useEffect(() => { void loadData() }, [])
 
@@ -86,11 +75,9 @@ function DashboardPage() {
     setError('')
     try {
       const session = await startNewInterview({
-        enterprise:  form.enterprise,
-        type:        form.type,
-        position:    form.position,
-        workingArea: form.workingArea || undefined,
-        description: form.description || undefined,
+        enterprise: 'InterviewMate AI',
+        type: 'TECHNICAL',
+        position: 'Simulación personalizada',
       })
       navigate(`/dashboard/session/${session.id}`)
     } catch (createError) {
@@ -513,13 +500,14 @@ function DashboardPage() {
               <button
                 type="button"
                 className="db-btn-primary"
-                onClick={() => setShowCreateForm((v) => !v)}
+                onClick={onStartInterview}
+                disabled={creating || loading}
               >
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                   <circle cx="6.5" cy="6.5" r="5.5" stroke="white" strokeWidth="1.2" />
                   <path d="M6.5 4v5M4 6.5h5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
                 </svg>
-                {showCreateForm ? 'Cancelar' : 'Nueva entrevista'}
+                {creating ? 'Preparando...' : 'Nueva entrevista'}
               </button>
               <button
                 type="button"
@@ -532,79 +520,6 @@ function DashboardPage() {
                 Modo estudio
               </button>
             </div>
-
-            {/* Formulario nueva entrevista */}
-            {showCreateForm && (
-              <div className="db-sidebar-section">
-                <div className="db-sidebar-label">Nueva entrevista</div>
-                <div className="db-create-form">
-                  <div className="db-field">
-                    <label className="db-label" htmlFor="enterprise">Empresa</label>
-                    <input
-                      id="enterprise"
-                      className="db-input"
-                      placeholder="Ej. Globant"
-                      required
-                      value={form.enterprise}
-                      onChange={(e) => setForm((prev) => ({ ...prev, enterprise: e.target.value }))}
-                    />
-                  </div>
-                  <div className="db-field">
-                    <label className="db-label" htmlFor="type">Tipo</label>
-                    <select
-                      id="type"
-                      className="db-select"
-                      value={form.type}
-                      onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value as InterviewType }))}
-                    >
-                      <option value="TECHNICAL">Técnica</option>
-                      <option value="HR">RRHH</option>
-                      <option value="PSYCHOLOGICAL">Psicológica</option>
-                    </select>
-                  </div>
-                  <div className="db-field">
-                    <label className="db-label" htmlFor="position">Posición</label>
-                    <input
-                      id="position"
-                      className="db-input"
-                      placeholder="Frontend Developer"
-                      required
-                      value={form.position}
-                      onChange={(e) => setForm((prev) => ({ ...prev, position: e.target.value }))}
-                    />
-                  </div>
-                  <div className="db-field">
-                    <label className="db-label" htmlFor="workingArea">Área (opcional)</label>
-                    <input
-                      id="workingArea"
-                      className="db-input"
-                      placeholder="Web Development"
-                      value={form.workingArea}
-                      onChange={(e) => setForm((prev) => ({ ...prev, workingArea: e.target.value }))}
-                    />
-                  </div>
-                  <div className="db-field">
-                    <label className="db-label" htmlFor="description">Descripción (opcional)</label>
-                    <textarea
-                      id="description"
-                      className="db-textarea"
-                      placeholder="Contexto de la entrevista"
-                      rows={2}
-                      value={form.description}
-                      onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    className="db-btn-primary"
-                    onClick={onStartInterview}
-                    disabled={creating || !form.enterprise.trim() || !form.position.trim() || loading}
-                  >
-                    {creating ? 'Creando...' : 'Crear y comenzar'}
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* ── MAIN ── */}

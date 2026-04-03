@@ -3,6 +3,7 @@ import PrivateRoute from './components/PrivateRoute'
 import Main from './MainLayout'
 import DashboardPage from './pages/DashboardPage'
 import InterviewSessionPage from './pages/InterviewSessionPage'
+import InterviewLivePage from './pages/InterviewLivePage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -39,6 +40,14 @@ export const appRouter = createBrowserRouter([
         element: (
           <PrivateRoute>
             <InterviewSessionPage />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: 'interview/live/:sessionId',
+        element: (
+          <PrivateRoute>
+            <InterviewLivePage />
           </PrivateRoute>
         ),
       },
