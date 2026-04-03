@@ -21,7 +21,6 @@ function Main() {
     navigate('/login', { replace: true })
   }
 
-  // Cierra el menú al hacer clic fuera de él
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
