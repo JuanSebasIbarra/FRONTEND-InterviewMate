@@ -1,9 +1,45 @@
-import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import {
+  handleOAuthCallback,
+  OAUTH_CALLBACK_PARAMS,
+} from '../controllers/authController'
+import { isAuthenticated } from '../lib/auth'
 
 
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
 
 function LandingPage() {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  /**
+   * Fallback OAuth2 handler.
+   *
+   * Intercepts the case where the backend still redirects the OAuth callback
+   * to "/" instead of "/auth/callback". As soon as the backend is configured
+   * to redirect to "/auth/callback" this block will never be reached.
+   *
+   * Priority order:
+   *  1. Token in URL → save + go to dashboard.
+   *  2. Already authenticated → go to dashboard (avoids showing the
+   *     marketing page to a logged-in user).
+   */
+  useEffect(() => {
+    const token = searchParams.get(OAUTH_CALLBACK_PARAMS.TOKEN)
+
+    if (token) {
+      const expiresAt = searchParams.get(OAUTH_CALLBACK_PARAMS.EXPIRES_AT)
+      handleOAuthCallback({ token, expiresAt })
+      navigate('/dashboard', { replace: true })
+      return
+    }
+
+    if (isAuthenticated()) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [navigate, searchParams])
+
   return (
     <>
       <style>{`
