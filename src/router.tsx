@@ -6,6 +6,7 @@ import InterviewSessionPage from './pages/InterviewSessionPage'
 import InterviewLivePage from './pages/InterviewLivePage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
+import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import RegisterPage from './pages/RegisterPage'
 import SettingsPage from './pages/SettingsPage'
 import StudyVoicePage from './pages/StudyVoicePage'
@@ -26,6 +27,17 @@ export const appRouter = createBrowserRouter([
       {
         path: 'register',
         element: <RegisterPage />,
+      },
+      {
+        /**
+         * Canonical OAuth2 callback route.
+         * The backend must redirect here after a successful Google sign-in:
+         *   <FRONTEND_URL>/auth/callback?token=<JWT>&expiresAt=<ISO>
+         *
+         * No PrivateRoute guard — this IS the page that establishes auth.
+         */
+        path: 'auth/callback',
+        element: <OAuthCallbackPage />,
       },
       {
         path: 'dashboard',
