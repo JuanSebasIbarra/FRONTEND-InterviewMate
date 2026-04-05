@@ -91,23 +91,25 @@ function RegisterPage() {
           min-height: 100vh;
           display: flex; align-items: center; justify-content: center;
           background: #f5f5f4;
-          padding: 2rem;
+          width: 100vw;
+          padding: 0;
         }
 
         /* ── CARD ── */
         .rg-card {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          width: 100%; max-width: 820px;
-          border-radius: 16px; overflow: hidden;
-          box-shadow: 0 4px 32px rgba(0,0,0,0.08);
+          width: 100%; max-width: none;
+          min-height: 100vh;
+          border-radius: 0; overflow: hidden;
+          box-shadow: none;
         }
 
         /* ── PANEL IZQUIERDO ── */
         .rg-left {
           background: #111; padding: 2.5rem;
           display: flex; flex-direction: column;
-          justify-content: space-between; min-height: 560px;
+          justify-content: space-between; min-height: 100%;
         }
         .rg-brand {
           display: flex; align-items: center; gap: 8px;
@@ -256,11 +258,10 @@ function RegisterPage() {
         }
 
         /* ── RESPONSIVE ── */
-        @media (max-width: 600px) {
+        @media (max-width: 900px) {
           .rg-card { grid-template-columns: 1fr; }
           .rg-left { display: none; }
           .rg-row  { grid-template-columns: 1fr; }
-          .rg-page { padding: 1rem; }
         }
       `}</style>
 
