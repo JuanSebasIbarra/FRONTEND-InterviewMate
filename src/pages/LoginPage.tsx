@@ -45,7 +45,8 @@ function LoginPage() {
           align-items: center;
           justify-content: center;
           background: #f5f5f4;
-          padding: 2rem;
+          width: 100vw;
+          padding: 0;
         }
 
         /* ── CARD PRINCIPAL ── */
@@ -53,10 +54,11 @@ function LoginPage() {
           display: grid;
           grid-template-columns: 1fr 1fr;
           width: 100%;
-          max-width: 820px;
-          border-radius: 16px;
+          max-width: none;
+          min-height: 100vh;
+          border-radius: 0;
           overflow: hidden;
-          box-shadow: 0 4px 32px rgba(0,0,0,0.08);
+          box-shadow: none;
         }
 
         /* ── PANEL IZQUIERDO ── */
@@ -66,7 +68,7 @@ function LoginPage() {
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          min-height: 520px;
+          min-height: 100%;
         }
         .lg-brand {
           display: flex; align-items: center; gap: 8px;
@@ -225,10 +227,9 @@ function LoginPage() {
         }
 
         /* ── RESPONSIVE ── */
-        @media (max-width: 600px) {
+        @media (max-width: 900px) {
           .lg-card { grid-template-columns: 1fr; }
           .lg-left { display: none; }
-          .lg-page { padding: 1rem; }
         }
       `}</style>
 
