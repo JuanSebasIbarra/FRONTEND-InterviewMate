@@ -27,3 +27,7 @@ export function getSessionById(sessionId: string) {
 export function getSessionsByTemplate(templateId: string) {
   return httpRequest<InterviewSession[]>(`/api/v1/sessions/template/${templateId}`)
 }
+
+export function getMySessions() {
+  return httpRequest<InterviewSession[]>('/api/v1/sessions/me')
+}
