@@ -14,6 +14,7 @@ function Main() {
     location.pathname === '/' ||
     location.pathname.startsWith('/login') ||
     location.pathname.startsWith('/register') ||
+    location.pathname.startsWith('/interview/live') ||
     location.pathname.startsWith('/dashboard') ||
     location.pathname.startsWith('/study/live') ||
     location.pathname.startsWith('/settings')
