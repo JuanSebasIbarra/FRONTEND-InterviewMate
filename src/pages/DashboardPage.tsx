@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {loadDashboardData,  startNewInterview,  type DashboardData,} from '../controllers/dashboardController'
 import { clearAuthToken } from '../lib/auth'
+import { getStudyModulesHistory, removeStudyModuleFromHistory, type StudyModuleHistoryItem } from '../lib/studyModulesHistory'
+import type { InterviewSession } from '../models/interview'
 
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
 
@@ -36,16 +38,44 @@ const INTERVIEW_TYPE_LABELS: Record<string, string> = {
   PSYCHOLOGICAL: 'Psicológica',
 }
 
+const SESSION_STATUS_LABELS: Record<string, string> = {
+  PENDING:     'Pendiente',
+  IN_PROGRESS: 'En progreso',
+  COMPLETED:   'Completada',
+}
+
+const HIDDEN_SESSIONS_KEY = 'im.hiddenSessionIds'
+
+class SessionVisibilityManager {
+  static getHiddenIds(): Set<string> {
+    try {
+      const raw = localStorage.getItem(HIDDEN_SESSIONS_KEY)
+      if (!raw) return new Set()
+      return new Set<string>(JSON.parse(raw) as string[])
+    } catch { return new Set() }
+  }
+  static hide(id: string): void {
+    const set = SessionVisibilityManager.getHiddenIds()
+    set.add(id)
+    localStorage.setItem(HIDDEN_SESSIONS_KEY, JSON.stringify([...set]))
+  }
+}
+
 function DashboardPage() {
   const navigate = useNavigate()
   const menuRef = useRef<HTMLDivElement>(null)
   const [data, setData]               = useState<DashboardData | null>(null)
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState('')
-  const [creating, setCreating]       = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [creating, setCreating]         = useState(false)
+  const [menuOpen, setMenuOpen]         = useState(false)
+  const [studyModules, setStudyModules] = useState<StudyModuleHistoryItem[]>([])
+  const [hiddenSessionIds, setHiddenSessionIds] = useState<Set<string>>(
+    () => SessionVisibilityManager.getHiddenIds(),
+  )
 
   useEffect(() => { void loadData() }, [])
+  useEffect(() => { setStudyModules(getStudyModulesHistory()) }, [])
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -93,13 +123,36 @@ function DashboardPage() {
     navigate('/login', { replace: true })
   }
 
+  const onDeleteSession = (sessionId: string) => {
+    SessionVisibilityManager.hide(sessionId)
+    setHiddenSessionIds(SessionVisibilityManager.getHiddenIds())
+  }
+
+  const onDeleteStudyModule = (id: string) => {
+    removeStudyModuleFromHistory(id)
+    setStudyModules(getStudyModulesHistory())
+  }
+
   const username         = data?.user?.username ?? ''
   const initials         = getInitials(username || 'U')
   const greeting         = getGreeting()
   const latestResult     = data?.latestResult ?? null
   const templatesCount   = data?.templates.length ?? 0
-  const completedSessions = data?.results.length ?? 0
-  const history          = data?.results ?? []
+
+  const resultsBySessionId = useMemo(
+    () => new Map((data?.results ?? []).map((r) => [r.sessionId, r])),
+    [data?.results],
+  )
+
+  const sessions: InterviewSession[] = useMemo(
+    () => (data?.sessions ?? []).filter((s) => !hiddenSessionIds.has(s.id)),
+    [data?.sessions, hiddenSessionIds],
+  )
+
+  const completedSessions = useMemo(
+    () => sessions.filter((s) => s.status === 'COMPLETED').length,
+    [sessions],
+  )
 
   return (
     <>
@@ -359,6 +412,9 @@ function DashboardPage() {
         .score-md { background: #FEF9C3; color: #854D0E; }
         .score-lo { background: #FEF2F2; color: #991B1B; }
         .score-na { background: #f5f5f4; color: #999; }
+        .status-done    { background: #DCFCE7; color: #166534; }
+        .status-pending { background: #FEF9C3; color: #854D0E; }
+        .db-study-icon  { color: #8B5CF6; }
         .db-history-status {
           font-size: 11px; color: #bbb;
           padding: 3px 8px; border-radius: 999px;
@@ -372,6 +428,17 @@ function DashboardPage() {
           transition: background 0.12s;
         }
         .db-history-btn:hover { background: #f5f5f4; }
+        .db-history-btn-danger {
+          font-size: 11px; color: #dc2626;
+          background: none; border: 0.5px solid #fecaca;
+          border-radius: 6px; padding: 4px 8px;
+          cursor: pointer; font-family: 'DM Sans', sans-serif;
+          transition: background 0.12s; line-height: 1;
+        }
+        .db-history-btn-danger:hover { background: #fef2f2; }
+        .session-pending    { background: #f5f5f4; color: #888; }
+        .session-inprogress { background: #EFF6FF; color: #1D4ED8; }
+        .session-completed  { background: #DCFCE7; color: #166534; }
         .db-history-empty {
           background: #fff; border-radius: 10px;
           border: 0.5px dashed #e5e5e5;
@@ -575,42 +642,120 @@ function DashboardPage() {
               <div className="db-section-title">Historial de sesiones</div>
               {loading ? (
                 <p className="db-loading">Cargando historial...</p>
-              ) : history.length === 0 ? (
+              ) : sessions.length === 0 ? (
                 <div className="db-history-empty">
                   <p>No tienes sesiones registradas todavía.</p>
                   <p>Comienza tu primera entrevista desde el panel izquierdo.</p>
                 </div>
               ) : (
                 <div className="db-history">
-                  {history.map((result) => (
-                    <div className="db-history-item" key={result.id}>
-                      <div className="db-history-icon">
+                  {sessions.map((session) => {
+                    const result = resultsBySessionId.get(session.id)
+                    const date = session.startedAt ?? session.completedAt
+                    const statusClass =
+                      session.status === 'COMPLETED' ? 'session-completed'
+                      : session.status === 'IN_PROGRESS' ? 'session-inprogress'
+                      : 'session-pending'
+                    return (
+                      <div className="db-history-item" key={session.id}>
+                        <div className="db-history-icon">
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M2 3a1 1 0 011-1h8a1 1 0 011 1v7a1 1 0 01-1 1H5L2 13V3z" stroke="#bbb" strokeWidth="1.2" fill="none" />
+                          </svg>
+                        </div>
+                        <div className="db-history-info">
+                          <div className="db-history-name">
+                            {session.templatePosition || `Sesión ${session.id.slice(0, 8)}`}
+                          </div>
+                          <div className="db-history-meta">
+                            {session.templateEnterprise}
+                            {result && ` · ${INTERVIEW_TYPE_LABELS[result.type ?? ''] ?? result.type} · Intento #${result.attemptNumber}`}
+                            {date && ` · ${new Date(date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}`}
+                          </div>
+                        </div>
+                        <div className="db-history-right">
+                          {result ? (
+                            <span className={`db-score-pill ${scoreClass(result.totalScore)}`}>
+                              {result.totalScore?.toFixed(1) ?? 'N/A'}
+                            </span>
+                          ) : (
+                            <span className={`db-score-pill ${statusClass}`}>
+                              {SESSION_STATUS_LABELS[session.status] ?? session.status}
+                            </span>
+                          )}
+                          {result && (
+                            <span className="db-history-status">{result.status}</span>
+                          )}
+                          {result && (
+                            <button
+                              type="button"
+                              className="db-history-btn"
+                              onClick={() => navigate(`/dashboard/session/${session.id}`)}
+                            >
+                              Ver
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="db-history-btn-danger"
+                            title="Eliminar del historial"
+                            onClick={() => onDeleteSession(session.id)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* ── MÓDULOS DE ESTUDIO ── */}
+            <div>
+              <div className="db-section-title">Módulos de estudio</div>
+              {studyModules.length === 0 ? (
+                <div className="db-history-empty">
+                  <p>Aún no tienes módulos de estudio guardados.</p>
+                  <p>Crea uno desde el Modo estudio.</p>
+                </div>
+              ) : (
+                <div className="db-history">
+                  {studyModules.map((module) => (
+                    <div className="db-history-item" key={module.id}>
+                      <div className="db-history-icon db-study-icon">
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                          <path d="M2 3a1 1 0 011-1h8a1 1 0 011 1v7a1 1 0 01-1 1H5L2 13V3z" stroke="#bbb" strokeWidth="1.2" fill="none" />
+                          <rect x="2" y="1" width="9" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.2" fill="none" />
+                          <path d="M4 4.5h6M4 7h6M4 9.5h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
                         </svg>
                       </div>
                       <div className="db-history-info">
-                        <div className="db-history-name">
-                          Sesión {result.sessionId.slice(0, 8)}
-                        </div>
+                        <div className="db-history-name">{module.topic}</div>
                         <div className="db-history-meta">
-                          {INTERVIEW_TYPE_LABELS[result.type ?? ''] ?? result.type} · Intento #{result.attemptNumber} ·{' '}
-                          {new Date(result.generatedAt).toLocaleDateString('es-ES', {
+                          {module.questionsCount} pregunta{module.questionsCount !== 1 ? 's' : ''} ·{' '}
+                          {new Date(module.savedAt).toLocaleDateString('es-ES', {
                             day: '2-digit', month: 'short', year: 'numeric',
                           })}
                         </div>
                       </div>
                       <div className="db-history-right">
-                        <span className={`db-score-pill ${scoreClass(result.totalScore)}`}>
-                          {result.totalScore?.toFixed(1) ?? 'N/A'}
+                        <span className={`db-score-pill ${module.completed ? 'status-done' : 'status-pending'}`}>
+                          {module.completed ? 'Completado' : 'Incompleto'}
                         </span>
-                        <span className="db-history-status">{result.status}</span>
                         <button
                           type="button"
                           className="db-history-btn"
-                          onClick={() => navigate(`/dashboard/session/${result.sessionId}`)}
+                          onClick={() => navigate('/study/live')}
                         >
-                          Ver
+                          Revisar
+                        </button>
+                        <button
+                          type="button"
+                          className="db-history-btn-danger"
+                          title="Eliminar módulo"
+                          onClick={() => onDeleteStudyModule(module.id)}
+                        >
+                          ✕
                         </button>
                       </div>
                     </div>

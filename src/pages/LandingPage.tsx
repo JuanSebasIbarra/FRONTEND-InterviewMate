@@ -49,7 +49,7 @@ function LandingPage() {
           font-family: 'DM Sans', sans-serif;
           color: #111;
           background: #fff;
-          width: 100vw;
+          width: 100%;
           min-height: 100vh;
           padding: 0 0 4rem;
         }

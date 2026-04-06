@@ -5,7 +5,7 @@ import {
   submitQuestionAnswer,
   type InterviewSessionData,
 } from '../controllers/interviewSessionController'
-import { getProfile } from '../services/profileService'
+import { getMe } from '../services/authService'
 
 type SpeechRecognitionAlternative = { transcript: string }
 type SpeechRecognitionResult = { isFinal: boolean; length: number; [index: number]: SpeechRecognitionAlternative }
@@ -20,6 +20,15 @@ type SpeechRecognitionInstance = {
   start: () => void; stop: () => void; abort: () => void
 }
 type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance
+
+type LocalSettingsAssets = {
+  firstName: string
+  lastName: string
+  avatarDataUrl: string
+  cvFileName: string
+}
+
+const SETTINGS_LOCAL_STORAGE_KEY = 'interviewmate.settings.local'
 
 declare global {
   interface Window {
@@ -270,21 +279,7 @@ function InterviewLivePage() {
   const [callTime, setCallTime]                   = useState(0)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [submitting, setSubmitting]               = useState(false)
-  const [userInitials, setUserInitials]           = useState('YO')
-
-  useEffect(() => {
-    getProfile()
-      .then((p) => {
-        const name = p.username ?? ''
-        const parts = name.split(/[\s._-]+/).filter(Boolean)
-        if (parts.length >= 2) {
-          setUserInitials((parts[0][0] + parts[1][0]).toUpperCase())
-        } else if (parts.length === 1 && parts[0].length > 0) {
-          setUserInitials(parts[0].slice(0, 2).toUpperCase())
-        }
-      })
-      .catch(() => {})
-  }, [])
+  const [authUsername, setAuthUsername]           = useState('')
 
   const speechRecognitionCtor =
     typeof window !== 'undefined'
@@ -297,6 +292,36 @@ function InterviewLivePage() {
   )
 
   const currentQuestion = pendingQuestions[currentQuestionIndex]
+
+  const localProfile = useMemo(() => {
+    const fallback: LocalSettingsAssets = {
+      firstName: '',
+      lastName: '',
+      avatarDataUrl: '',
+      cvFileName: '',
+    }
+
+    if (typeof window === 'undefined') return fallback
+
+    try {
+      const raw = localStorage.getItem(SETTINGS_LOCAL_STORAGE_KEY)
+      if (!raw) return fallback
+      const parsed = JSON.parse(raw) as Partial<LocalSettingsAssets>
+      return {
+        firstName: parsed.firstName ?? '',
+        lastName: parsed.lastName ?? '',
+        avatarDataUrl: parsed.avatarDataUrl ?? '',
+        cvFileName: parsed.cvFileName ?? '',
+      }
+    } catch {
+      return fallback
+    }
+  }, [])
+
+  const profileName = [localProfile.firstName, localProfile.lastName].filter(Boolean).join(' ')
+  const selfLabel = authUsername || profileName || 'Tú'
+  const userInitial = (selfLabel[0] ?? 'U').toUpperCase()
+  const interviewerName = data?.session.templateEnterprise || 'InterviewMate AI'
 
   const loadSession = async () => {
     if (!sessionId) return
@@ -316,6 +341,28 @@ function InterviewLivePage() {
     void loadSession()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId])
+
+  useEffect(() => {
+    let mounted = true
+
+    const loadAuthUser = async () => {
+      try {
+        const user = await getMe()
+        if (mounted) {
+          setAuthUsername(user.username?.trim() ?? '')
+        }
+      } catch {
+        if (mounted) {
+          setAuthUsername('')
+        }
+      }
+    }
+
+    void loadAuthUser()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   useEffect(() => {
     const timer = setInterval(() => setCallTime((t) => t + 1), 1000)
@@ -431,51 +478,62 @@ function InterviewLivePage() {
         /* ── ROOT ── */
         .il-root {
           font-family: 'DM Sans', sans-serif;
-          background: #0c0c14;
-          height: 100vh;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          color: #fff;
+          background: #1f2024;
+          min-height: 100vh;
+          width: 100%;
+          padding: 1rem;
         }
 
-        /* ── TOP BAR ── */
-        .il-topbar {
-          height: 52px;
-          background: #111118;
-          border-bottom: 0.5px solid #252535;
+        .il-call-shell {
+          width: 100%;
+          min-height: calc(100vh - 2rem);
+          border-radius: 14px;
+          background: #25262c;
+          border: 1px solid #3a3b43;
+          display: grid;
+          grid-template-rows: auto 1fr auto auto;
+          overflow: hidden;
+        }
+
+        .il-call-header {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0 1.5rem;
-          flex-shrink: 0;
-          gap: 1rem;
+          padding: 0.9rem 1.1rem;
+          border-bottom: 1px solid #363741;
+          background: #2a2b31;
         }
-        .il-topbar-brand {
-          display: flex; align-items: center; gap: 8px;
-          font-size: 14px; font-weight: 500; color: #e5e5e5;
-          min-width: 180px;
+        .il-call-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #f3f4f6;
+          font-size: 13px;
+          font-weight: 500;
         }
-        .il-topbar-brand-dot {
-          width: 22px; height: 22px; border-radius: 6px;
-          background: #1e1e30; border: 1px solid #3a3a50;
-          display: flex; align-items: center; justify-content: center;
-          flex-shrink: 0;
+        .il-status-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #22c55e;
+          box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.18);
         }
-        .il-topbar-center {
-          display: flex; align-items: center; gap: 10px;
-        }
+
         .il-timer {
-          display: flex; align-items: center; gap: 6px;
-          font-size: 13px; font-weight: 500; color: #e5e5e5;
-          letter-spacing: 0.06em;
-          background: #1e1e30;
-          padding: 5px 14px;
+          background: #3a3c45;
           border-radius: 999px;
-          border: 0.5px solid #2a2a40;
+          padding: 6px 12px;
+          font-size: 12px;
+          color: #f5f5f5;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 6px;
         }
         .il-timer-dot {
-          width: 7px; height: 7px; border-radius: 50%;
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
           background: #ef4444;
           animation: il-pulse 2s ease-in-out infinite;
         }
@@ -494,17 +552,92 @@ function InterviewLivePage() {
           font-weight: 400;
         }
 
-        /* ── MAIN ── */
-        .il-main {
-          flex: 1;
-          display: flex;
-          overflow: hidden;
+        .il-stage {
+          position: relative;
+          padding: 1rem;
+          background: radial-gradient(80% 80% at 50% 20%, #2f3038 0%, #222329 75%);
         }
 
-        /* ── VIDEO AREA ── */
-        .il-video-area {
-          flex: 1;
+        .il-remote-tile {
+          width: 100%;
+          height: 100%;
+          min-height: 48vh;
+          background: #2a2c33;
+          border: 1px solid #3c3d46;
+          border-radius: 12px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 1rem;
           position: relative;
+          overflow: hidden;
+        }
+        .il-remote-meta {
+          position: absolute;
+          left: 0.85rem;
+          bottom: 0.85rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 5px 10px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 500;
+          background: rgba(17, 17, 17, 0.62);
+          color: #fff;
+          backdrop-filter: blur(6px);
+        }
+        .il-remote-role {
+          color: #d4d4d8;
+          font-weight: 400;
+        }
+
+        .il-self-tile {
+          position: absolute;
+          right: 1.6rem;
+          top: 1.6rem;
+          width: 170px;
+          aspect-ratio: 4 / 3;
+          border-radius: 12px;
+          overflow: hidden;
+          background: #17181d;
+          border: 1px solid #4b4d58;
+          box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .il-self-photo {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .il-self-fallback {
+          width: 64px;
+          height: 64px;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          font-size: 24px;
+          font-weight: 500;
+          color: #ede9fe;
+          background: #5b53c8;
+        }
+        .il-self-meta {
+          position: absolute;
+          left: 8px;
+          bottom: 8px;
+          font-size: 11px;
+          color: #fff;
+          background: rgba(0, 0, 0, 0.48);
+          border-radius: 999px;
+          padding: 3px 8px;
+        }
+
+        .il-avatar-wrapper {
+          width: 200px;
+          height: 200px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -512,115 +645,85 @@ function InterviewLivePage() {
           overflow: hidden;
         }
 
-        /* ── BOT TILE ── */
-        .il-bot-tile {
-          width: min(520px, 80%);
-          aspect-ratio: 16 / 10;
-          background: #121220;
-          border-radius: 16px;
-          border: 1px solid #252535;
+        .il-question {
+          width: min(900px, 92%);
+          background: rgba(255, 255, 255, 0.95);
+          border-radius: 10px;
+          padding: 0.9rem 1rem;
+          font-size: 13px;
+          line-height: 1.55;
+          color: #222;
+          text-align: left;
+          border: 1px solid #e5e7eb;
+          min-height: 70px;
           display: flex;
           flex-direction: column;
           align-items: center;
-          justify-content: center;
-          position: relative;
-          overflow: hidden;
-        }
-        .il-bot-tile-bg {
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(ellipse at 50% 38%, #1a2440 0%, #0a0a16 70%);
-          pointer-events: none;
-        }
-        .il-bot-avatar-wrap {
-          position: relative;
-          z-index: 1;
-          display: inline-flex;
-        }
-        .il-bot-talking-ring {
-          position: absolute;
-          inset: -14px;
-          border-radius: 50%;
-          border: 2.5px solid #00e8c0;
-          opacity: 0;
-          transition: opacity 0.3s;
-          pointer-events: none;
-        }
-        .il-bot-talking-ring.active {
-          opacity: 0.55;
-          animation: il-ring-pulse 1.2s ease-in-out infinite;
-        }
-        @keyframes il-ring-pulse {
-          0%, 100% { transform: scale(1);    opacity: 0.55; }
-          50%       { transform: scale(1.07); opacity: 0.2; }
-        }
-        .il-bot-name-tag {
-          position: absolute;
-          bottom: 12px; left: 14px;
-          z-index: 2;
-          display: flex; align-items: center; gap: 6px;
-          background: rgba(0,0,0,0.55);
-          backdrop-filter: blur(8px);
-          border-radius: 6px;
-          padding: 4px 10px;
-          font-size: 12px; font-weight: 500; color: #e5e5e5;
-        }
-        .il-bot-name-dot {
-          width: 7px; height: 7px; border-radius: 50%;
-          background: #00e8c0;
-          flex-shrink: 0;
+          justify-content: flex-start;
         }
 
-        /* ── USER PIP ── */
-        .il-user-pip {
-          position: absolute;
-          bottom: 16px; right: 16px;
-          width: 168px; height: 110px;
-          background: #1a1a2a;
-          border-radius: 10px;
-          border: 1.5px solid #333348;
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        }
-        .il-user-pip-inner {
-          flex: 1;
-          display: flex; flex-direction: column;
-          align-items: center; justify-content: center;
-          gap: 5px;
-        }
-        .il-user-avatar {
-          width: 42px; height: 42px; border-radius: 50%;
-          background: #252540;
-          border: 1.5px solid #3a3a60;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 15px; font-weight: 600; color: #9090c0;
+        .il-progress {
+          font-size: 11px;
+          color: #d4d4d8;
+          font-weight: 500;
           letter-spacing: 0.02em;
         }
-        .il-user-cam-off {
-          display: flex; align-items: center; gap: 4px;
-          font-size: 9.5px; color: #555; font-weight: 400;
+
+        .il-caption-wrap {
+          margin: 0 1rem;
+          border-radius: 10px;
+          border: 1px solid #3c3d46;
+          background: #2b2d34;
+          padding: 0.75rem 0.95rem;
         }
-        .il-user-pip-footer {
-          padding: 4px 8px 5px;
-          background: linear-gradient(to top, rgba(0,0,0,0.55), transparent);
-          font-size: 10px; color: #bbb; font-weight: 400;
+        .il-caption-title {
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: #9ca3af;
+          margin-bottom: 6px;
+        }
+        .il-transcript {
+          width: 100%;
+          font-size: 13px;
+          line-height: 1.5;
+          color: #eceff1;
+          min-height: 22px;
+          max-height: 90px;
+          overflow-y: auto;
+          font-weight: 400;
+        }
+        .il-transcript:empty::before {
+          content: 'Tu respuesta aparecerá aquí...';
+          color: #9ca3af;
         }
 
-        /* ── RIGHT PANEL ── */
-        .il-right-panel {
-          width: 310px;
-          background: #111118;
-          border-left: 0.5px solid #252535;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          flex-shrink: 0;
+        .il-controls-bar {
+          margin: 0.9rem 1rem 1rem;
+          background: #2a2b31;
+          border: 1px solid #3a3b43;
+          border-radius: 12px;
+          padding: 0.85rem;
+          display: grid;
+          grid-template-columns: 1fr auto;
+          align-items: center;
+          gap: 1rem;
         }
-        .il-panel-header {
-          padding: 14px 16px 12px;
-          border-bottom: 0.5px solid #252535;
+        .il-controls-left {
+          display: flex;
+          gap: 1.1rem;
+          align-items: center;
+        }
+        .il-controls-right {
+          display: flex;
+          align-items: center;
+        }
+        .il-mic-btn, .il-end-btn, .il-submit-btn {
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          border: none;
+          cursor: pointer;
           display: flex;
           flex-direction: column;
           gap: 3px;
@@ -695,14 +798,14 @@ function InterviewLivePage() {
           transition: transform 0.15s, opacity 0.15s;
           position: relative; flex-shrink: 0;
         }
-        .il-ctrl-btn:hover  { transform: scale(1.07); }
-        .il-ctrl-btn:active { transform: scale(0.96); }
-        .il-ctrl-mic { background: #2a2a3a; }
-        .il-ctrl-mic.active { background: #22c55e; }
-        .il-ctrl-mic.active::after {
+        .il-mic-btn { background: #4b5563; }
+        .il-mic-btn.il-active { background: #22c55e; }
+        .il-mic-btn.il-active::after {
           content: '';
           position: absolute;
-          width: 60px; height: 60px; border-radius: 50%;
+          width: 70px;
+          height: 70px;
+          border-radius: 50%;
           border: 2px solid #22c55e;
           opacity: 0.3;
           animation: il-ping 1.5s ease-out infinite;
@@ -711,73 +814,143 @@ function InterviewLivePage() {
           0%   { transform: scale(0.9); opacity: 0.35; }
           100% { transform: scale(1.4); opacity: 0; }
         }
-        .il-ctrl-submit { background: #22c55e; }
-        .il-ctrl-submit:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
-        .il-ctrl-end { background: #ef4444; }
-        .il-ctrl-label {
-          font-size: 10.5px; color: #555;
-          text-align: center; font-weight: 400;
-          white-space: nowrap;
+        .il-mic-btn:hover, .il-end-btn:hover, .il-submit-btn:hover {
+          transform: scale(1.05);
+          opacity: 0.9;
         }
-        .il-ctrl-label.active { color: #22c55e; font-weight: 500; }
+        .il-end-btn    { background: #ef4444; }
+        .il-submit-btn { background: #22c55e; }
+        .il-submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .il-label {
+          font-size: 11px;
+          color: #9ca3af;
+          font-weight: 400;
+          text-align: center;
+          margin-top: 6px;
+        }
+        .il-label.il-active {
+          color: #22c55e;
+          font-weight: 500;
+        }
+
+        @media (max-width: 900px) {
+          .il-self-tile {
+            width: 132px;
+            right: 1.2rem;
+            top: 1.2rem;
+          }
+          .il-controls-bar {
+            grid-template-columns: 1fr;
+          }
+          .il-controls-right {
+            justify-content: flex-end;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .il-root { padding: 0; }
+          .il-call-shell {
+            min-height: 100vh;
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+          }
+          .il-self-tile {
+            width: 106px;
+          }
+          .il-avatar-wrapper {
+            width: 170px;
+            height: 170px;
+          }
+          .il-controls-left {
+            gap: 0.8rem;
+            justify-content: center;
+          }
+        }
       `}</style>
 
       <div className="il-root">
+        <div className="il-call-shell">
 
-        {/* ── TOP BAR ── */}
-        <div className="il-topbar">
-          <div className="il-topbar-brand">
-            <div className="il-topbar-brand-dot">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <circle cx="6" cy="6" r="4" fill="white" />
-                <circle cx="6" cy="6" r="2" fill="#111" />
-              </svg>
+          <div className="il-call-header">
+            <div className="il-call-title">
+              <span className="il-status-dot" />
+              <span>Entrevista en vivo · {interviewerName}</span>
             </div>
-            InterviewMate
-          </div>
-
-          <div className="il-topbar-center">
             <div className="il-timer">
               <span className="il-timer-dot" />
               {formatTime(callTime)}
             </div>
-            <span className="il-rec-label">● REC</span>
-          </div>
-
-          <div className="il-topbar-right">
-            Pregunta {currentQuestionIndex + 1} de {pendingQuestions.length}
           </div>
         </div>
 
         {/* ── MAIN ── */}
         <div className="il-main">
 
-          {/* ── VIDEO AREA ── */}
-          <div className="il-video-area">
-
-            {/* Bot tile – cámara encendida */}
-            <div className="il-bot-tile">
-              <div className="il-bot-tile-bg" />
-              <div className="il-bot-avatar-wrap">
-                <div className={`il-bot-talking-ring ${listening ? 'active' : ''}`} />
-                <RobotAvatar talking={listening} thinking={submitting} />
+          <div className="il-stage">
+            <div className="il-remote-tile">
+              <div className="il-avatar-wrapper">
+                <RobotAvatar
+                  talking={listening}
+                  thinking={submitting}
+                />
               </div>
-              <div className="il-bot-name-tag">
-                <span className="il-bot-name-dot" />
-                InterviewMate AI
+              <div className="il-question">{currentQuestion.question}</div>
+              <div className="il-remote-meta">
+                <span>{interviewerName}</span>
+                <span className="il-remote-role">Entrevistador</span>
               </div>
             </div>
 
-            {/* User PIP – cámara desactivada */}
-            <div className="il-user-pip">
-              <div className="il-user-pip-inner">
-                <div className="il-user-avatar">{userInitials}</div>
-                <div className="il-user-cam-off">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                    <line x1="2" y1="2" x2="22" y2="22" stroke="#555" strokeWidth="2.5" strokeLinecap="round" />
-                    <path d="M10.5 5H14a2 2 0 012 2v3.5M8 8v2a4 4 0 004 4h1M17 11.5V17a2 2 0 01-2 2H7a2 2 0 01-2-2V9a2 2 0 012-2h.5" stroke="#555" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                  Cámara desactivada
+            <div className="il-self-tile" aria-label="Vista previa del participante">
+              {localProfile.avatarDataUrl ? (
+                <img
+                  className="il-self-photo"
+                  src={localProfile.avatarDataUrl}
+                  alt={`Foto de perfil de ${selfLabel}`}
+                />
+              ) : (
+                <div className="il-self-fallback">{userInitial}</div>
+              )}
+              <div className="il-self-meta">{selfLabel}</div>
+            </div>
+          </div>
+
+          <div className="il-caption-wrap">
+            <div className="il-caption-title">Transcripción en tiempo real</div>
+            <div className="il-transcript">{transcript}</div>
+          </div>
+
+          <div className="il-controls-bar">
+            <div className="il-controls-left">
+              <div className="il-progress">
+                Pregunta {currentQuestionIndex + 1} de {pendingQuestions.length}
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  className={`il-mic-btn ${listening ? 'il-active' : ''}`}
+                  onClick={onToggleMic}
+                  title={listening ? 'Silenciar' : 'Activar micrófono'}
+                >
+                  {listening ? (
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                      <rect x="8" y="3" width="8" height="13" rx="4" fill="white" />
+                      <path d="M4 12c0 4.4 3.6 8 8 8s8-3.6 8-8" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                      <line x1="12" y1="20" x2="12" y2="24" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  ) : (
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 3l18 18M15 9v2c0 .6-.1 1.1-.3 1.6M9.5 9.5V6c0-1.4 1.1-2.5 2.5-2.5s2.5 1.1 2.5 2.5v6c0 .3 0 .6-.1.9" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                      <path d="M5 12c0 3.9 3.1 7 7 7 1 0 1.9-.2 2.8-.6" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                      <line x1="12" y1="19" x2="12" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  )}
+                </button>
+                <div className={`il-label ${listening ? 'il-active' : ''}`}>
+                  {listening ? 'Escuchando' : 'Micrófono'}
                 </div>
               </div>
               <div className="il-user-pip-footer">Tú</div>
@@ -801,76 +974,41 @@ function InterviewLivePage() {
                 <div className="il-question-text">{currentQuestion.question}</div>
               </div>
 
-              {/* Live transcript */}
-              <div className="il-info-block">
-                <div className="il-block-eyebrow">Tu respuesta</div>
-                {transcript ? (
-                  <div className="il-transcript-body">{transcript}</div>
-                ) : (
-                  <div className="il-transcript-placeholder">
-                    {listening ? 'Escucha activa...' : 'Activa el micrófono para responder'}
-                  </div>
-                )}
-                {listening && (
-                  <div className="il-listening-badge">
-                    <span className="il-listening-dot" />
-                    Escuchando
-                  </div>
-                )}
+              <div>
+                <button
+                  type="button"
+                  className="il-end-btn"
+                  onClick={onEndCall}
+                  title="Finalizar entrevista"
+                >
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 9c0-1.1.9-2 2-2h2c1.1 0 2 .9 2 2v.5c1.3-1 3-1.5 5-1.5s3.7.5 5 1.5V9c0-1.1.9-2 2-2h2c1.1 0 2 .9 2 2v6c0 1.1-.9 2-2 2h-2c-1.1 0-2-.9-2-2v-.5c-1.3 1-3 1.5-5 1.5s-3.7-.5-5-1.5v.5c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V9z" fill="white" />
+                    <line x1="6" y1="6" x2="18" y2="18" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+                <div className="il-label">Finalizar</div>
               </div>
 
-            </div>
-          </div>
-
-        </div>
-
-        {/* ── CONTROL BAR ── */}
-        <div className="il-controlbar">
-
-          {/* Mic */}
-          <div className="il-ctrl-item">
-            <button
-              type="button"
-              className={`il-ctrl-btn il-ctrl-mic ${listening ? 'active' : ''}`}
-              onClick={onToggleMic}
-              title={listening ? 'Silenciar' : 'Activar micrófono'}
-            >
-              {listening ? (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <rect x="8" y="3" width="8" height="13" rx="4" fill="white" />
-                  <path d="M4 12c0 4.4 3.6 8 8 8s8-3.6 8-8" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                  <line x1="12" y1="20" x2="12" y2="24" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              ) : (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M3 3l18 18M15 9v2c0 .6-.1 1.1-.3 1.6M9.5 9.5V6c0-1.4 1.1-2.5 2.5-2.5s2.5 1.1 2.5 2.5v6c0 .3 0 .6-.1.9" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                  <path d="M5 12c0 3.9 3.1 7 7 7 1 0 1.9-.2 2.8-.6" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                  <line x1="12" y1="19" x2="12" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              )}
-            </button>
-            <div className={`il-ctrl-label ${listening ? 'active' : ''}`}>
-              {listening ? 'Escuchando' : 'Micrófono'}
-            </div>
-          </div>
-
-          {/* Submit – visible only when there's a transcript */}
-          {transcript.trim() && (
-            <div className="il-ctrl-item">
-              <button
-                type="button"
-                className="il-ctrl-btn il-ctrl-submit"
-                onClick={onSubmitAnswer}
-                disabled={submitting}
-                title="Enviar respuesta"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M5 12l5 5L20 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              <div className="il-ctrl-label">
-                {submitting ? 'Enviando...' : 'Enviar'}
+              <div>
+                <button
+                  type="button"
+                  className="il-submit-btn"
+                  onClick={onSubmitAnswer}
+                  disabled={submitting || !transcript.trim()}
+                  title="Enviar respuesta"
+                >
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                    <path d="M5 12l5 5L20 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+                <div className="il-label">
+                  {submitting ? 'Enviando...' : 'Enviar'}
+                </div>
               </div>
+            </div>
+
+            <div className="il-controls-right">
+              <div className="il-label">Modo llamada sin cámara</div>
             </div>
           )}
 

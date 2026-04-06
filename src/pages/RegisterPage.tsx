@@ -89,9 +89,9 @@ function RegisterPage() {
         .rg-page {
           font-family: 'DM Sans', sans-serif;
           min-height: 100vh;
-          display: flex; align-items: center; justify-content: center;
+          width: 100%;
+          display: block;
           background: #f5f5f4;
-          width: 100vw;
           padding: 0;
         }
 
@@ -99,9 +99,11 @@ function RegisterPage() {
         .rg-card {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          width: 100%; max-width: none;
+          width: 100%;
           min-height: 100vh;
-          border-radius: 0; overflow: hidden;
+          max-width: none;
+          border-radius: 0;
+          overflow: hidden;
           box-shadow: none;
         }
 
@@ -262,6 +264,7 @@ function RegisterPage() {
           .rg-card { grid-template-columns: 1fr; }
           .rg-left { display: none; }
           .rg-row  { grid-template-columns: 1fr; }
+          .rg-page { padding: 0; }
         }
       `}</style>
 

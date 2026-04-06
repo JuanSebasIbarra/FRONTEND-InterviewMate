@@ -8,6 +8,7 @@ export type StudyModuleHistoryItem = {
   createdAt: string
   questionsCount: number
   savedAt: string
+  completed: boolean
 }
 
 function normalizeTopic(topic: string | undefined) {
@@ -35,16 +36,43 @@ export function getStudyModulesHistory(): StudyModuleHistoryItem[] {
 export function saveStudyModuleToHistory(session: StudySession) {
   if (typeof window === 'undefined') return
 
+  const existing     = getStudyModulesHistory()
+  const existingItem  = existing.find((item) => item.id === session.id)
+
   const nextItem: StudyModuleHistoryItem = {
     id: session.id,
     topic: normalizeTopic(session.topic),
     createdAt: session.createdAt,
     questionsCount: session.questions.length,
     savedAt: new Date().toISOString(),
+    completed: existingItem?.completed ?? false,
   }
 
-  const existing = getStudyModulesHistory()
   const deduped = existing.filter((item) => item.id !== nextItem.id)
   const next = [nextItem, ...deduped].slice(0, 20)
   window.localStorage.setItem(STUDY_MODULES_HISTORY_KEY, JSON.stringify(next))
+}
+
+export function markStudyModuleCompleted(id: string): void {
+  if (typeof window === 'undefined') return
+  try {
+    const existing = getStudyModulesHistory()
+    const next = existing.map((item) =>
+      item.id === id ? { ...item, completed: true } : item
+    )
+    window.localStorage.setItem(STUDY_MODULES_HISTORY_KEY, JSON.stringify(next))
+  } catch {
+    // ignore
+  }
+}
+
+export function removeStudyModuleFromHistory(id: string): void {
+  if (typeof window === 'undefined') return
+  try {
+    const existing = getStudyModulesHistory()
+    const next = existing.filter((item) => item.id !== id)
+    window.localStorage.setItem(STUDY_MODULES_HISTORY_KEY, JSON.stringify(next))
+  } catch {
+    // ignore
+  }
 }

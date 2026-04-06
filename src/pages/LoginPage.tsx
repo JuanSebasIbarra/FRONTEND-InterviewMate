@@ -41,11 +41,9 @@ function LoginPage() {
         .lg-page {
           font-family: 'DM Sans', sans-serif;
           min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          width: 100%;
+          display: block;
           background: #f5f5f4;
-          width: 100vw;
           padding: 0;
         }
 
@@ -54,8 +52,8 @@ function LoginPage() {
           display: grid;
           grid-template-columns: 1fr 1fr;
           width: 100%;
-          max-width: none;
           min-height: 100vh;
+          max-width: none;
           border-radius: 0;
           overflow: hidden;
           box-shadow: none;
@@ -230,6 +228,7 @@ function LoginPage() {
         @media (max-width: 900px) {
           .lg-card { grid-template-columns: 1fr; }
           .lg-left { display: none; }
+          .lg-page { padding: 0; }
         }
       `}</style>
 

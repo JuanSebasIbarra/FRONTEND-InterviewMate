@@ -12,8 +12,9 @@ function Main() {
 
   const useNewInterfaceNavbar =
     location.pathname === '/' ||
-    location.pathname === '/login' ||
-    location.pathname === '/register' ||
+    location.pathname.startsWith('/login') ||
+    location.pathname.startsWith('/register') ||
+    location.pathname.startsWith('/interview/live') ||
     location.pathname.startsWith('/dashboard') ||
     location.pathname.startsWith('/interview/live') ||
     location.pathname.startsWith('/study/live') ||
