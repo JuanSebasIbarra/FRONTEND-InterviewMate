@@ -8,7 +8,7 @@ import type { ProfileResponse, User } from '../models/auth'
 import { getMe } from '../services/authService'
 import { getProfile } from '../services/profileService'
 import { getMyResults } from '../services/resultService'
-import { beginSession, createSession } from '../services/sessionService'
+import { beginSession, createSession, getMySessions } from '../services/sessionService'
 import { createTemplate, getMyTemplates } from '../services/templateService'
 
 export type DashboardData = {
@@ -16,6 +16,7 @@ export type DashboardData = {
   profile: ProfileResponse | null
   templates: InterviewTemplate[]
   results: InterviewResult[]
+  sessions: InterviewSession[]
   latestResult: InterviewResult | null
 }
 
@@ -26,23 +27,31 @@ function orderResultsByDate(results: InterviewResult[]) {
 }
 
 export async function loadDashboardData(): Promise<DashboardData> {
-  const [userRes, profileRes, templatesRes, resultsRes] = await Promise.allSettled([
+  const [userRes, profileRes, templatesRes, resultsRes, sessionsRes] = await Promise.allSettled([
     getMe(),
     getProfile(),
     getMyTemplates(),
     getMyResults(),
+    getMySessions(),
   ])
 
   const user = userRes.status === 'fulfilled' ? userRes.value : null
   const profile = profileRes.status === 'fulfilled' ? profileRes.value : null
   const templates = templatesRes.status === 'fulfilled' ? templatesRes.value : []
   const results = resultsRes.status === 'fulfilled' ? orderResultsByDate(resultsRes.value) : []
+  const sessions = sessionsRes.status === 'fulfilled'
+    ? [...sessionsRes.value].sort(
+        (a, b) => new Date(b.startedAt ?? b.completedAt ?? 0).getTime()
+                - new Date(a.startedAt ?? a.completedAt ?? 0).getTime(),
+      )
+    : []
 
   return {
     user,
     profile,
     templates,
     results,
+    sessions,
     latestResult: results[0] ?? null,
   }
 }
