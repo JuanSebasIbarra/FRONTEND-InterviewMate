@@ -20,6 +20,10 @@ export type DashboardData = {
   latestResult: InterviewResult | null
 }
 
+function ensureArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? value : []
+}
+
 function orderResultsByDate(results: InterviewResult[]) {
   return [...results].sort(
     (a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime(),
@@ -37,10 +41,12 @@ export async function loadDashboardData(): Promise<DashboardData> {
 
   const user = userRes.status === 'fulfilled' ? userRes.value : null
   const profile = profileRes.status === 'fulfilled' ? profileRes.value : null
-  const templates = templatesRes.status === 'fulfilled' ? templatesRes.value : []
-  const results = resultsRes.status === 'fulfilled' ? orderResultsByDate(resultsRes.value) : []
+  const templates = templatesRes.status === 'fulfilled' ? ensureArray<InterviewTemplate>(templatesRes.value) : []
+  const results = resultsRes.status === 'fulfilled'
+    ? orderResultsByDate(ensureArray<InterviewResult>(resultsRes.value))
+    : []
   const sessions = sessionsRes.status === 'fulfilled'
-    ? [...sessionsRes.value].sort(
+    ? [...ensureArray<InterviewSession>(sessionsRes.value)].sort(
         (a, b) => new Date(b.startedAt ?? b.completedAt ?? 0).getTime()
                 - new Date(a.startedAt ?? a.completedAt ?? 0).getTime(),
       )
