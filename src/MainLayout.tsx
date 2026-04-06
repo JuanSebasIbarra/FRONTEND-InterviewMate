@@ -11,6 +11,7 @@ function Main() {
   const menuRef = useRef<HTMLDivElement>(null)
 
   const useNewInterfaceNavbar =
+    location.pathname === '/' ||
     location.pathname.startsWith('/dashboard') ||
     location.pathname.startsWith('/study/live') ||
     location.pathname.startsWith('/settings')
