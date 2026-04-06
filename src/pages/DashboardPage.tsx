@@ -94,7 +94,8 @@ function DashboardPage() {
       const nextData = await loadDashboardData()
       setData(nextData)
     } catch (loadError) {
-      setError((loadError as Error).message)
+      console.error(loadError)
+      setError('No se pudo cargar el dashboard en este momento.')
     } finally {
       setLoading(false)
     }
@@ -537,6 +538,20 @@ function DashboardPage() {
               <button
                 type="button"
                 className="db-nav-item"
+                onClick={onStartInterview}
+                disabled={creating || loading}
+              >
+                <span className="db-nav-icon">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2" />
+                    <path d="M7 4.5v5M4.5 7h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                  </svg>
+                </span>
+                {creating ? 'Preparando...' : 'Nueva entrevista'}
+              </button>
+              <button
+                type="button"
+                className="db-nav-item"
                 onClick={() => navigate('/study/live')}
               >
                 <span className="db-nav-icon">
@@ -559,33 +574,6 @@ function DashboardPage() {
                 <div className="db-stat-mini-label">Plantillas creadas</div>
                 <div className="db-stat-mini-val">{loading ? '—' : templatesCount}</div>
               </div>
-            </div>
-
-            {/* Acciones */}
-            <div className="db-sidebar-section">
-              <div className="db-sidebar-label">Acciones</div>
-              <button
-                type="button"
-                className="db-btn-primary"
-                onClick={onStartInterview}
-                disabled={creating || loading}
-              >
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                  <circle cx="6.5" cy="6.5" r="5.5" stroke="white" strokeWidth="1.2" />
-                  <path d="M6.5 4v5M4 6.5h5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
-                </svg>
-                {creating ? 'Preparando...' : 'Nueva entrevista'}
-              </button>
-              <button
-                type="button"
-                className="db-btn-secondary"
-                onClick={() => navigate('/study/live')}
-              >
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                  <path d="M2 10l3-3 2 2 4-5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Modo estudio
-              </button>
             </div>
           </div>
 
