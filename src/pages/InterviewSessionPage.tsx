@@ -110,15 +110,17 @@ function InterviewSessionPage() {
       <style>{`
         .prep-root {
           min-height: 100vh;
+          width: 100vw;
           display: flex;
-          align-items: center;
-          justify-content: center;
+          align-items: stretch;
+          justify-content: stretch;
           background: linear-gradient(160deg, #f5f5f4 0%, #ecebff 100%);
-          padding: 1.25rem;
+          padding: 0;
           font-family: 'DM Sans', sans-serif;
         }
         .prep-loading {
           min-height: 100vh;
+          width: 100vw;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -126,46 +128,47 @@ function InterviewSessionPage() {
           color: #666;
         }
         .prep-modal {
-          width: min(960px, 100%);
+          width: 100%;
           background: #fff;
-          border: 0.5px solid #e5e5e5;
-          border-radius: 16px;
-          box-shadow: 0 24px 80px rgba(17, 17, 17, 0.08);
+          border: none;
+          border-radius: 0;
+          box-shadow: none;
           overflow: hidden;
           display: grid;
           grid-template-columns: 1.2fr 1fr;
-          min-height: 560px;
+          min-height: 100vh;
         }
         .prep-left {
-          padding: 1.5rem;
+          padding: 2.25rem;
           border-right: 0.5px solid #ececec;
           display: flex;
           flex-direction: column;
-          gap: 1rem;
+          gap: 1.25rem;
         }
         .prep-right {
-          padding: 1.5rem;
+          padding: 2.25rem;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
           background: radial-gradient(circle at 30% 20%, #f3f2ff 0%, #fff 58%);
         }
         .prep-overline {
-          font-size: 10px;
+          font-size: 12px;
           letter-spacing: 0.08em;
           text-transform: uppercase;
           color: #9ca3af;
         }
         .prep-title {
-          font-size: 1.35rem;
+          font-size: 1.95rem;
           color: #111;
           line-height: 1.2;
           font-weight: 500;
         }
         .prep-sub {
-          font-size: 12px;
+          font-size: 15px;
           color: #7b7b7b;
           font-weight: 300;
+          line-height: 1.5;
         }
         .prep-btn-primary,
         .prep-btn-secondary,
@@ -202,12 +205,12 @@ function InterviewSessionPage() {
           gap: 6px;
         }
         .prep-module-topic {
-          font-size: 12px;
+          font-size: 14px;
           color: #111;
           font-weight: 500;
         }
         .prep-module-meta {
-          font-size: 11px;
+          font-size: 12px;
           color: #888;
         }
         .prep-hint {
@@ -228,8 +231,8 @@ function InterviewSessionPage() {
           gap: 14px;
         }
         .prep-avatar {
-          width: 180px;
-          height: 180px;
+          width: 260px;
+          height: 260px;
           border-radius: 999px;
           border: 3px solid #e7e4ff;
           background: linear-gradient(160deg, #fcfcff 0%, #f1f0ff 100%);
@@ -241,27 +244,27 @@ function InterviewSessionPage() {
           background: #fff;
           border: 0.5px solid #ececec;
           border-radius: 10px;
-          padding: 12px;
+          padding: 14px;
         }
         .prep-card-title {
-          font-size: 11px;
+          font-size: 12px;
           letter-spacing: 0.06em;
           text-transform: uppercase;
           color: #9ca3af;
           margin-bottom: 6px;
         }
         .prep-card-text {
-          font-size: 12px;
+          font-size: 14px;
           color: #4b5563;
           line-height: 1.55;
         }
         .prep-error {
-          font-size: 12px;
+          font-size: 14px;
           color: #b91c1c;
           background: #fef2f2;
           border: 0.5px solid #fecaca;
           border-radius: 8px;
-          padding: 8px 10px;
+          padding: 10px 12px;
         }
         .prep-popup-backdrop {
           position: fixed;
@@ -405,12 +408,47 @@ function InterviewSessionPage() {
           <aside className="prep-right">
             <div className="prep-avatar-wrap">
               <div className="prep-avatar" aria-hidden="true">
-                <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
-                  <circle cx="60" cy="60" r="58" fill="#EEEDFE" />
-                  <circle cx="43" cy="50" r="6" fill="#534AB7" />
-                  <circle cx="77" cy="50" r="6" fill="#534AB7" />
-                  <path d="M38 78C45 88 55 93 60 93C65 93 75 88 82 78" stroke="#534AB7" strokeWidth="5" strokeLinecap="round" />
-                  <path d="M25 36C34 23 46 17 60 17C74 17 86 23 95 36" stroke="#D6D3FF" strokeWidth="6" strokeLinecap="round" />
+                <svg width="180" height="180" viewBox="0 0 200 200" fill="none">
+                  <defs>
+                    <linearGradient id="botHead" x1="46" y1="26" x2="154" y2="154" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="#FDFEFF" />
+                      <stop offset="1" stopColor="#E4E9F3" />
+                    </linearGradient>
+                    <linearGradient id="botScreen" x1="60" y1="58" x2="140" y2="136" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="#143053" />
+                      <stop offset="1" stopColor="#0A1E3A" />
+                    </linearGradient>
+                    <linearGradient id="botBody" x1="70" y1="116" x2="128" y2="188" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="#FCFDFF" />
+                      <stop offset="1" stopColor="#DEE5F2" />
+                    </linearGradient>
+                    <radialGradient id="botEye" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(0.5 0.5) rotate(90) scale(1)">
+                      <stop stopColor="#74F5FF" />
+                      <stop offset="1" stopColor="#25D8EA" />
+                    </radialGradient>
+                  </defs>
+
+                  <ellipse cx="100" cy="192" rx="34" ry="6" fill="#D6DDF0" opacity="0.75" />
+
+                  <rect x="30" y="74" width="22" height="40" rx="11" fill="#A7D4F0" />
+                  <rect x="148" y="74" width="22" height="40" rx="11" fill="#A7D4F0" />
+
+                  <rect x="42" y="28" width="116" height="104" rx="36" fill="url(#botHead)" stroke="#D7DEEA" strokeWidth="1.4" />
+                  <rect x="58" y="46" width="84" height="66" rx="24" fill="url(#botScreen)" />
+
+                  <ellipse cx="84" cy="78" rx="7" ry="10" fill="url(#botEye)" />
+                  <ellipse cx="116" cy="78" rx="7" ry="10" fill="url(#botEye)" />
+                  <path d="M84 96C89 102 95 105 100 105C105 105 111 102 116 96" stroke="#44E7F5" strokeWidth="4" strokeLinecap="round" />
+
+                  <rect x="88" y="128" width="24" height="10" rx="5" fill="#B3C2DA" />
+
+                  <path d="M65 142C65 127 77 115 92 115H108C123 115 135 127 135 142V150C135 169 119 184 100 184C81 184 65 169 65 150V142Z" fill="url(#botBody)" stroke="#D7DEEA" strokeWidth="1.2" />
+
+                  <ellipse cx="72" cy="154" rx="12" ry="26" fill="#EFF3FA" transform="rotate(18 72 154)" />
+                  <ellipse cx="128" cy="154" rx="12" ry="26" fill="#EFF3FA" transform="rotate(-18 128 154)" />
+
+                  <ellipse cx="86" cy="182" rx="12" ry="8" fill="#EEF2FA" />
+                  <ellipse cx="114" cy="182" rx="12" ry="8" fill="#EEF2FA" />
                 </svg>
               </div>
 

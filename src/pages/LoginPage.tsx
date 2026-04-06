@@ -66,7 +66,7 @@ function LoginPage() {
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          min-height: 520px;
+          min-height: 100%;
         }
         .lg-brand {
           display: flex; align-items: center; gap: 8px;
@@ -225,7 +225,7 @@ function LoginPage() {
         }
 
         /* ── RESPONSIVE ── */
-        @media (max-width: 600px) {
+        @media (max-width: 900px) {
           .lg-card { grid-template-columns: 1fr; }
           .lg-left { display: none; }
           .lg-page { padding: 0; }

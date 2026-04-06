@@ -450,32 +450,22 @@ function InterviewLivePage() {
 
   if (loading) {
     return (
-      <div className="il-root">
-        <div className="il-container">
-          <div style={{ color: '#fff', fontSize: '14px' }}>Cargando entrevista...</div>
-        </div>
+      <div style={{ background: '#0c0c14', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Sans, sans-serif', color: '#555', fontSize: '14px' }}>
+        Cargando entrevista...
       </div>
     )
   }
 
   if (!data || !currentQuestion) {
     return (
-      <div className="il-root">
-        <div className="il-container">
-          <div style={{ color: '#fff', fontSize: '14px' }}>No hay preguntas disponibles</div>
-          <button
-            onClick={() => navigate('/dashboard')}
-            style={{
-              background: '#fff',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-            }}
-          >
-            Volver al dashboard
-          </button>
-        </div>
+      <div style={{ background: '#0c0c14', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Sans, sans-serif', gap: '1rem' }}>
+        <div style={{ color: '#555', fontSize: '14px' }}>No hay preguntas disponibles</div>
+        <button
+          onClick={() => navigate('/dashboard')}
+          style={{ background: '#1e1e30', border: '0.5px solid #3a3a50', color: '#e5e5e5', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontSize: '13px' }}
+        >
+          Volver al dashboard
+        </button>
       </div>
     )
   }
@@ -485,6 +475,7 @@ function InterviewLivePage() {
       <style>{`
         .il * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        /* ── ROOT ── */
         .il-root {
           font-family: 'DM Sans', sans-serif;
           background: #1f2024;
@@ -549,6 +540,16 @@ function InterviewLivePage() {
         @keyframes il-pulse {
           0%, 100% { opacity: 1; }
           50%       { opacity: 0.3; }
+        }
+        .il-rec-label {
+          font-size: 11px; color: #ef4444;
+          font-weight: 500; letter-spacing: 0.08em;
+        }
+        .il-topbar-right {
+          min-width: 180px;
+          text-align: right;
+          font-size: 12px; color: #555;
+          font-weight: 400;
         }
 
         .il-stage {
@@ -640,6 +641,8 @@ function InterviewLivePage() {
           display: flex;
           align-items: center;
           justify-content: center;
+          background: #0c0c14;
+          overflow: hidden;
         }
 
         .il-question {
@@ -654,6 +657,7 @@ function InterviewLivePage() {
           border: 1px solid #e5e7eb;
           min-height: 70px;
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: flex-start;
         }
@@ -721,10 +725,78 @@ function InterviewLivePage() {
           border: none;
           cursor: pointer;
           display: flex;
-          align-items: center;
-          justify-content: center;
+          flex-direction: column;
+          gap: 3px;
+        }
+        .il-panel-title {
+          font-size: 14px; font-weight: 500; color: #e5e5e5;
+        }
+        .il-panel-sub {
+          font-size: 11px; color: #555;
+        }
+        .il-panel-body {
+          flex: 1; overflow-y: auto;
+          padding: 14px;
+          display: flex; flex-direction: column; gap: 12px;
+        }
+        .il-panel-body::-webkit-scrollbar { width: 4px; }
+        .il-panel-body::-webkit-scrollbar-track { background: transparent; }
+        .il-panel-body::-webkit-scrollbar-thumb { background: #2a2a3a; border-radius: 2px; }
+        .il-info-block {
+          background: #1a1a28;
+          border-radius: 10px;
+          border: 0.5px solid #252535;
+          padding: 12px 14px;
+        }
+        .il-block-eyebrow {
+          font-size: 10px;
+          letter-spacing: 0.1em; text-transform: uppercase;
+          color: #00e8c0; margin-bottom: 8px; font-weight: 500;
+        }
+        .il-question-text {
+          font-size: 13px; color: #c8c8d8;
+          line-height: 1.65; font-weight: 400;
+        }
+        .il-transcript-body {
+          font-size: 13px; color: #8888a8;
+          line-height: 1.65; font-weight: 300;
+          min-height: 48px;
+        }
+        .il-transcript-placeholder {
+          color: #383848; font-style: italic;
+          font-size: 13px; min-height: 48px;
+          display: flex; align-items: center;
+        }
+        .il-listening-badge {
+          display: flex; align-items: center; gap: 5px;
+          font-size: 11px; color: #22c55e; font-weight: 500;
+          margin-top: 8px;
+        }
+        .il-listening-dot {
+          width: 6px; height: 6px; border-radius: 50%;
+          background: #22c55e;
+          animation: il-pulse 1s ease-in-out infinite;
+        }
+
+        /* ── CONTROL BAR ── */
+        .il-controlbar {
+          height: 78px;
+          background: #111118;
+          border-top: 0.5px solid #252535;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+          gap: 10px;
+        }
+        .il-ctrl-item {
+          display: flex; flex-direction: column;
+          align-items: center; gap: 5px;
+        }
+        .il-ctrl-btn {
+          width: 46px; height: 46px; border-radius: 50%;
+          border: none; cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
           transition: transform 0.15s, opacity 0.15s;
-          position: relative;
+          position: relative; flex-shrink: 0;
         }
         .il-mic-btn { background: #4b5563; }
         .il-mic-btn.il-active { background: #22c55e; }
@@ -735,12 +807,12 @@ function InterviewLivePage() {
           height: 70px;
           border-radius: 50%;
           border: 2px solid #22c55e;
-          opacity: 0.4;
+          opacity: 0.3;
           animation: il-ping 1.5s ease-out infinite;
         }
         @keyframes il-ping {
-          0%   { transform: scale(0.9); opacity: 0.5; }
-          100% { transform: scale(1.3); opacity: 0; }
+          0%   { transform: scale(0.9); opacity: 0.35; }
+          100% { transform: scale(1.4); opacity: 0; }
         }
         .il-mic-btn:hover, .il-end-btn:hover, .il-submit-btn:hover {
           transform: scale(1.05);
@@ -811,6 +883,10 @@ function InterviewLivePage() {
               {formatTime(callTime)}
             </div>
           </div>
+        </div>
+
+        {/* ── MAIN ── */}
+        <div className="il-main">
 
           <div className="il-stage">
             <div className="il-remote-tile">
@@ -877,6 +953,26 @@ function InterviewLivePage() {
                   {listening ? 'Escuchando' : 'Micrófono'}
                 </div>
               </div>
+              <div className="il-user-pip-footer">Tú</div>
+            </div>
+
+          </div>
+
+          {/* ── RIGHT PANEL (transcript) ── */}
+          <div className="il-right-panel">
+            <div className="il-panel-header">
+              <span className="il-panel-title">Sesión en curso</span>
+              <span className="il-panel-sub">
+                {data.session.templatePosition} · {data.session.templateEnterprise}
+              </span>
+            </div>
+            <div className="il-panel-body">
+
+              {/* Current question */}
+              <div className="il-info-block">
+                <div className="il-block-eyebrow">Pregunta {currentQuestionIndex + 1}</div>
+                <div className="il-question-text">{currentQuestion.question}</div>
+              </div>
 
               <div>
                 <button
@@ -914,8 +1010,26 @@ function InterviewLivePage() {
             <div className="il-controls-right">
               <div className="il-label">Modo llamada sin cámara</div>
             </div>
+          )}
+
+          {/* End call */}
+          <div className="il-ctrl-item">
+            <button
+              type="button"
+              className="il-ctrl-btn il-ctrl-end"
+              onClick={onEndCall}
+              title="Finalizar entrevista"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M3 9c0-1.1.9-2 2-2h2c1.1 0 2 .9 2 2v.5c1.3-1 3-1.5 5-1.5s3.7.5 5 1.5V9c0-1.1.9-2 2-2h2c1.1 0 2 .9 2 2v6c0 1.1-.9 2-2 2h-2c-1.1 0-2-.9-2-2v-.5c-1.3 1-3 1.5-5 1.5s-3.7-.5-5-1.5v.5c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V9z" fill="white" />
+                <line x1="6" y1="6" x2="18" y2="18" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+            </button>
+            <div className="il-ctrl-label">Finalizar</div>
           </div>
+
         </div>
+
       </div>
     </>
   )

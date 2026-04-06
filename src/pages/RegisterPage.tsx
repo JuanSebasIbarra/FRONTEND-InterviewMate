@@ -111,7 +111,7 @@ function RegisterPage() {
         .rg-left {
           background: #111; padding: 2.5rem;
           display: flex; flex-direction: column;
-          justify-content: space-between; min-height: 560px;
+          justify-content: space-between; min-height: 100%;
         }
         .rg-brand {
           display: flex; align-items: center; gap: 8px;
@@ -260,7 +260,7 @@ function RegisterPage() {
         }
 
         /* ── RESPONSIVE ── */
-        @media (max-width: 600px) {
+        @media (max-width: 900px) {
           .rg-card { grid-template-columns: 1fr; }
           .rg-left { display: none; }
           .rg-row  { grid-template-columns: 1fr; }
