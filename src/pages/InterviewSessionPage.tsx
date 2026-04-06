@@ -1,11 +1,38 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { loadInterviewSessionData, type InterviewSessionData } from '../controllers/interviewSessionController'
 import {
   getStudyModulesHistory,
   type StudyModuleHistoryItem,
 } from '../lib/studyModulesHistory'
-import type { InterviewType } from '../models/interview'
+
+function formatDateLabel(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Fecha desconocida'
+
+  return new Intl.DateTimeFormat('es-ES', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)
+}
+
+class StudyModuleCatalog {
+  private readonly modules: StudyModuleHistoryItem[]
+  private readonly modulesById: Map<string, StudyModuleHistoryItem>
+
+  constructor(modules: StudyModuleHistoryItem[]) {
+    this.modules = modules
+    this.modulesById = new Map(modules.map((module) => [module.id, module]))
+  }
+
+  getAll() {
+    return this.modules
+  }
+
+  getById(id: string) {
+    return this.modulesById.get(id) ?? null
+  }
+}
 
 function InterviewSessionPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
@@ -14,12 +41,8 @@ function InterviewSessionPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [modules, setModules] = useState<StudyModuleHistoryItem[]>([])
-
-  const [interviewType, setInterviewType] = useState<InterviewType>('TECHNICAL')
-  const [level, setLevel] = useState('MID')
-  const [focus, setFocus] = useState('Resolver preguntas de forma estructurada')
-  const [duration, setDuration] = useState('15')
   const [selectedModuleId, setSelectedModuleId] = useState('')
+  const [isModuleModalOpen, setIsModuleModalOpen] = useState(false)
 
   useEffect(() => {
     if (!sessionId) return
@@ -29,6 +52,12 @@ function InterviewSessionPage() {
   useEffect(() => {
     setModules(getStudyModulesHistory())
   }, [])
+
+  const catalog = useMemo(() => new StudyModuleCatalog(modules), [modules])
+  const selectedModule = useMemo(
+    () => catalog.getById(selectedModuleId),
+    [catalog, selectedModuleId],
+  )
 
   const refresh = async (id: string) => {
     setLoading(true)
@@ -46,33 +75,18 @@ function InterviewSessionPage() {
   const onContinueToLiveInterview = () => {
     if (!sessionId) return
 
-    const selectedModule = modules.find((module) => module.id === selectedModuleId) ?? null
-
     navigate(`/interview/live/${sessionId}`, {
       state: {
         prep: {
-          interviewType,
-          level,
-          focus,
-          durationMinutes: Number(duration),
           module: selectedModule,
         },
       },
     })
   }
 
-  const interviewTypeLabel: Record<InterviewType, string> = {
-    TECHNICAL: 'Técnica',
-    HR: 'RRHH',
-    PSYCHOLOGICAL: 'Psicológica',
-  }
-
-  const avatarMessage: Record<InterviewType, string> = {
-    TECHNICAL:
-      'Excelente decisión. Enfócate en explicar tu razonamiento paso a paso y piensa en voz alta.',
-    HR: 'Conecta tus respuestas con experiencias reales. Tu autenticidad será tu mejor fortaleza.',
-    PSYCHOLOGICAL:
-      'Respira y mantén claridad. Responder con calma y coherencia te hará destacar.',
+  const onSelectModule = (moduleId: string) => {
+    setSelectedModuleId(moduleId)
+    setIsModuleModalOpen(false)
   }
 
   if (loading) {
@@ -153,38 +167,32 @@ function InterviewSessionPage() {
           color: #7b7b7b;
           font-weight: 300;
         }
-        .prep-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
-        }
-        .prep-field {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-        .prep-field-full {
-          grid-column: 1 / -1;
-        }
-        .prep-label {
-          font-size: 11px;
-          color: #666;
-          font-weight: 500;
-        }
-        .prep-select,
-        .prep-input {
-          font-family: 'DM Sans', sans-serif;
-          border: 0.5px solid #ddd;
+        .prep-btn-primary,
+        .prep-btn-secondary,
+        .prep-btn-outline {
           border-radius: 8px;
-          padding: 9px 10px;
+          border: none;
+          padding: 10px 14px;
           font-size: 12px;
+          cursor: pointer;
+          font-family: 'DM Sans', sans-serif;
+        }
+        .prep-btn-primary {
+          background: #111;
+          color: #fff;
+        }
+        .prep-btn-secondary {
+          background: #f5f5f4;
+          color: #666;
+          border: 0.5px solid #e5e5e5;
+        }
+        .prep-btn-outline {
           background: #fff;
+          color: #111;
+          border: 0.5px solid #ddd;
+          width: fit-content;
         }
-        .prep-hint {
-          font-size: 11px;
-          color: #999;
-        }
-        .prep-module-card {
+        .prep-selected-module {
           border: 0.5px solid #e9e9e9;
           border-radius: 10px;
           background: #f9f9f8;
@@ -202,30 +210,16 @@ function InterviewSessionPage() {
           font-size: 11px;
           color: #888;
         }
+        .prep-hint {
+          font-size: 11px;
+          color: #999;
+        }
         .prep-actions {
           margin-top: auto;
           display: flex;
           justify-content: space-between;
           gap: 10px;
           padding-top: 8px;
-        }
-        .prep-btn-secondary,
-        .prep-btn-primary {
-          border-radius: 8px;
-          border: none;
-          padding: 10px 14px;
-          font-size: 12px;
-          cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
-        }
-        .prep-btn-secondary {
-          background: #f5f5f4;
-          color: #666;
-          border: 0.5px solid #e5e5e5;
-        }
-        .prep-btn-primary {
-          background: #111;
-          color: #fff;
         }
         .prep-avatar-wrap {
           display: flex;
@@ -269,6 +263,81 @@ function InterviewSessionPage() {
           border-radius: 8px;
           padding: 8px 10px;
         }
+        .prep-popup-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(17, 17, 17, 0.52);
+          display: grid;
+          place-items: center;
+          padding: 1rem;
+          z-index: 40;
+        }
+        .prep-popup {
+          width: min(680px, 100%);
+          max-height: 80vh;
+          overflow: hidden;
+          border-radius: 14px;
+          border: 0.5px solid #e5e5e5;
+          background: #fff;
+          display: grid;
+          grid-template-rows: auto 1fr auto;
+        }
+        .prep-popup-head {
+          padding: 12px 14px;
+          border-bottom: 0.5px solid #ececec;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .prep-popup-title {
+          font-size: 13px;
+          color: #111;
+          font-weight: 500;
+        }
+        .prep-popup-list {
+          padding: 10px;
+          overflow: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .prep-history-item {
+          border: 0.5px solid #e5e5e5;
+          border-radius: 10px;
+          padding: 10px;
+          display: grid;
+          grid-template-columns: 1fr auto;
+          align-items: center;
+          gap: 10px;
+        }
+        .prep-history-name {
+          font-size: 12px;
+          color: #111;
+          font-weight: 500;
+          margin-bottom: 3px;
+        }
+        .prep-history-meta {
+          font-size: 11px;
+          color: #888;
+          line-height: 1.45;
+        }
+        .prep-select-history-btn {
+          border: 0.5px solid #ddd;
+          border-radius: 8px;
+          background: #fff;
+          color: #111;
+          padding: 7px 10px;
+          font-size: 11px;
+          cursor: pointer;
+          font-family: 'DM Sans', sans-serif;
+        }
+        .prep-popup-footer {
+          border-top: 0.5px solid #ececec;
+          padding: 10px 14px;
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+        }
         @media (max-width: 860px) {
           .prep-modal {
             grid-template-columns: 1fr;
@@ -277,9 +346,6 @@ function InterviewSessionPage() {
             border-right: none;
             border-bottom: 0.5px solid #ececec;
           }
-          .prep-grid {
-            grid-template-columns: 1fr;
-          }
         }
       `}</style>
 
@@ -287,103 +353,35 @@ function InterviewSessionPage() {
         <div className="prep-modal" role="dialog" aria-modal="true" aria-label="Preparación de entrevista">
           <div className="prep-left">
             <div className="prep-overline">Antes de iniciar</div>
-            <h2 className="prep-title">Configura tu entrevista en vivo</h2>
+            <h2 className="prep-title">Carga tu módulo de estudio</h2>
             <p className="prep-sub">
-              Esta sección prepara la simulación para el cargo <strong>{data.session.templatePosition}</strong>.
+              Conserva tu flujo de estudio y asocia un módulo del historial a esta sesión de entrevista
+              para seguir practicando con contexto.
             </p>
 
             {error && <p className="prep-error">{error}</p>}
 
-            <div className="prep-grid">
-              <div className="prep-field">
-                <label className="prep-label" htmlFor="prep-type">Tipo de entrevista</label>
-                <select
-                  id="prep-type"
-                  className="prep-select"
-                  value={interviewType}
-                  onChange={(event) => setInterviewType(event.target.value as InterviewType)}
-                >
-                  <option value="TECHNICAL">Técnica</option>
-                  <option value="HR">RRHH</option>
-                  <option value="PSYCHOLOGICAL">Psicológica</option>
-                </select>
-              </div>
+            <button
+              type="button"
+              className="prep-btn-outline"
+              onClick={() => setIsModuleModalOpen(true)}
+            >
+              Cargar módulo desde historial
+            </button>
 
-              <div className="prep-field">
-                <label className="prep-label" htmlFor="prep-level">Nivel objetivo</label>
-                <select
-                  id="prep-level"
-                  className="prep-select"
-                  value={level}
-                  onChange={(event) => setLevel(event.target.value)}
-                >
-                  <option value="JUNIOR">Junior</option>
-                  <option value="MID">Mid</option>
-                  <option value="SENIOR">Senior</option>
-                </select>
-              </div>
-
-              <div className="prep-field prep-field-full">
-                <label className="prep-label" htmlFor="prep-focus">Enfoque principal</label>
-                <input
-                  id="prep-focus"
-                  className="prep-input"
-                  value={focus}
-                  onChange={(event) => setFocus(event.target.value)}
-                  placeholder="Ej. Comunicación, algoritmos, liderazgo"
-                />
-              </div>
-
-              <div className="prep-field">
-                <label className="prep-label" htmlFor="prep-duration">Duración estimada</label>
-                <select
-                  id="prep-duration"
-                  className="prep-select"
-                  value={duration}
-                  onChange={(event) => setDuration(event.target.value)}
-                >
-                  <option value="10">10 min</option>
-                  <option value="15">15 min</option>
-                  <option value="20">20 min</option>
-                  <option value="30">30 min</option>
-                </select>
-              </div>
-
-              <div className="prep-field">
-                <label className="prep-label" htmlFor="prep-module">Módulo de estudio (opcional)</label>
-                <select
-                  id="prep-module"
-                  className="prep-select"
-                  value={selectedModuleId}
-                  onChange={(event) => setSelectedModuleId(event.target.value)}
-                >
-                  <option value="">Sin módulo</option>
-                  {modules.map((module) => (
-                    <option key={module.id} value={module.id}>
-                      {module.topic}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {modules.length === 0 ? (
-              <p className="prep-hint">
-                No tienes módulos de estudio en el historial. Puedes continuar sin módulo.
-              </p>
-            ) : (
-              <div className="prep-module-card">
-                <div className="prep-module-topic">
-                  {selectedModuleId
-                    ? modules.find((module) => module.id === selectedModuleId)?.topic ?? 'Sin módulo seleccionado'
-                    : 'Sin módulo seleccionado'}
-                </div>
+            {selectedModule ? (
+              <div className="prep-selected-module">
+                <div className="prep-module-topic">{selectedModule.topic}</div>
                 <div className="prep-module-meta">
-                  {selectedModuleId
-                    ? `${modules.find((module) => module.id === selectedModuleId)?.questionsCount ?? 0} preguntas generadas`
-                    : 'Puedes iniciar sin seleccionar un módulo'}
+                  {selectedModule.questionsCount} preguntas · Guardado {formatDateLabel(selectedModule.savedAt)}
                 </div>
               </div>
+            ) : (
+              <p className="prep-hint">
+                {modules.length > 0
+                  ? 'Aún no has cargado un módulo para esta entrevista. Es opcional.'
+                  : 'No hay sesiones de estudio guardadas en el historial.'}
+              </p>
             )}
 
             <div className="prep-actions">
@@ -417,8 +415,10 @@ function InterviewSessionPage() {
               </div>
 
               <div className="prep-card">
-                <div className="prep-card-title">Avatar motivador · {interviewTypeLabel[interviewType]}</div>
-                <p className="prep-card-text">{avatarMessage[interviewType]}</p>
+                <div className="prep-card-title">Asistente de práctica</div>
+                <p className="prep-card-text">
+                  Cuando ingreses a la llamada, recibirás preguntas en vivo y podrás responder con micrófono.
+                </p>
               </div>
             </div>
 
@@ -435,6 +435,63 @@ function InterviewSessionPage() {
           </aside>
         </div>
       </section>
+
+      {isModuleModalOpen && (
+        <div className="prep-popup-backdrop" role="dialog" aria-modal="true" aria-label="Historial de módulos">
+          <div className="prep-popup">
+            <div className="prep-popup-head">
+              <div className="prep-popup-title">Sesiones de estudio guardadas</div>
+              <button
+                type="button"
+                className="prep-btn-secondary"
+                onClick={() => setIsModuleModalOpen(false)}
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="prep-popup-list">
+              {catalog.getAll().length === 0 ? (
+                <p className="prep-hint">No hay módulos disponibles en el historial.</p>
+              ) : (
+                catalog.getAll().map((module) => (
+                  <div key={module.id} className="prep-history-item">
+                    <div>
+                      <div className="prep-history-name">{module.topic}</div>
+                      <div className="prep-history-meta">
+                        {module.questionsCount} preguntas · Creado {formatDateLabel(module.createdAt)}
+                        <br />
+                        Guardado {formatDateLabel(module.savedAt)}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="prep-select-history-btn"
+                      onClick={() => onSelectModule(module.id)}
+                    >
+                      Cargar módulo
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="prep-popup-footer">
+              <button
+                type="button"
+                className="prep-btn-secondary"
+                onClick={() => {
+                  setSelectedModuleId('')
+                  setIsModuleModalOpen(false)
+                }}
+              >
+                Continuar sin módulo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
