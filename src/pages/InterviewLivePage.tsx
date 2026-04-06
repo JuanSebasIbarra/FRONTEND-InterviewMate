@@ -1010,7 +1010,7 @@ function InterviewLivePage() {
             <div className="il-controls-right">
               <div className="il-label">Modo llamada sin cámara</div>
             </div>
-          )}
+          </div>
 
           {/* End call */}
           <div className="il-ctrl-item">
