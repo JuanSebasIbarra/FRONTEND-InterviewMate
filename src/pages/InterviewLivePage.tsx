@@ -5,6 +5,7 @@ import {
   submitQuestionAnswer,
   type InterviewSessionData,
 } from '../controllers/interviewSessionController'
+import { getMe } from '../services/authService'
 
 type SpeechRecognitionAlternative = { transcript: string }
 type SpeechRecognitionResult = { isFinal: boolean; length: number; [index: number]: SpeechRecognitionAlternative }
@@ -19,6 +20,15 @@ type SpeechRecognitionInstance = {
   start: () => void; stop: () => void; abort: () => void
 }
 type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance
+
+type LocalSettingsAssets = {
+  firstName: string
+  lastName: string
+  avatarDataUrl: string
+  cvFileName: string
+}
+
+const SETTINGS_LOCAL_STORAGE_KEY = 'interviewmate.settings.local'
 
 declare global {
   interface Window {
@@ -269,6 +279,7 @@ function InterviewLivePage() {
   const [callTime, setCallTime]                   = useState(0)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [submitting, setSubmitting]               = useState(false)
+  const [authUsername, setAuthUsername]           = useState('')
 
   const speechRecognitionCtor =
     typeof window !== 'undefined'
@@ -281,6 +292,36 @@ function InterviewLivePage() {
   )
 
   const currentQuestion = pendingQuestions[currentQuestionIndex]
+
+  const localProfile = useMemo(() => {
+    const fallback: LocalSettingsAssets = {
+      firstName: '',
+      lastName: '',
+      avatarDataUrl: '',
+      cvFileName: '',
+    }
+
+    if (typeof window === 'undefined') return fallback
+
+    try {
+      const raw = localStorage.getItem(SETTINGS_LOCAL_STORAGE_KEY)
+      if (!raw) return fallback
+      const parsed = JSON.parse(raw) as Partial<LocalSettingsAssets>
+      return {
+        firstName: parsed.firstName ?? '',
+        lastName: parsed.lastName ?? '',
+        avatarDataUrl: parsed.avatarDataUrl ?? '',
+        cvFileName: parsed.cvFileName ?? '',
+      }
+    } catch {
+      return fallback
+    }
+  }, [])
+
+  const profileName = [localProfile.firstName, localProfile.lastName].filter(Boolean).join(' ')
+  const selfLabel = authUsername || profileName || 'Tú'
+  const userInitial = (selfLabel[0] ?? 'U').toUpperCase()
+  const interviewerName = data?.session.templateEnterprise || 'InterviewMate AI'
 
   const loadSession = async () => {
     if (!sessionId) return
@@ -300,6 +341,28 @@ function InterviewLivePage() {
     void loadSession()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId])
+
+  useEffect(() => {
+    let mounted = true
+
+    const loadAuthUser = async () => {
+      try {
+        const user = await getMe()
+        if (mounted) {
+          setAuthUsername(user.username?.trim() ?? '')
+        }
+      } catch {
+        if (mounted) {
+          setAuthUsername('')
+        }
+      }
+    }
+
+    void loadAuthUser()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   useEffect(() => {
     const timer = setInterval(() => setCallTime((t) => t + 1), 1000)
@@ -424,40 +487,61 @@ function InterviewLivePage() {
 
         .il-root {
           font-family: 'DM Sans', sans-serif;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: #1f2024;
           min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 2rem;
-        }
-
-        .il-container {
-          max-width: 500px;
           width: 100%;
-          display: flex;
-          flex-direction: column;
-          gap: 2rem;
-          align-items: center;
+          padding: 1rem;
         }
 
-        /* Timer */
-        .il-timer {
-          background: rgba(255, 255, 255, 0.25);
-          backdrop-filter: blur(12px);
-          border-radius: 999px;
-          padding: 8px 20px;
-          font-size: 14px;
-          color: #fff;
-          font-weight: 500;
-          letter-spacing: 0.05em;
+        .il-call-shell {
+          width: 100%;
+          min-height: calc(100vh - 2rem);
+          border-radius: 14px;
+          background: #25262c;
+          border: 1px solid #3a3b43;
+          display: grid;
+          grid-template-rows: auto 1fr auto auto;
+          overflow: hidden;
+        }
+
+        .il-call-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.9rem 1.1rem;
+          border-bottom: 1px solid #363741;
+          background: #2a2b31;
+        }
+        .il-call-title {
           display: flex;
           align-items: center;
           gap: 8px;
+          color: #f3f4f6;
+          font-size: 13px;
+          font-weight: 500;
         }
-        .il-timer-dot {
+        .il-status-dot {
           width: 8px;
           height: 8px;
+          border-radius: 50%;
+          background: #22c55e;
+          box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.18);
+        }
+
+        .il-timer {
+          background: #3a3c45;
+          border-radius: 999px;
+          padding: 6px 12px;
+          font-size: 12px;
+          color: #f5f5f5;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .il-timer-dot {
+          width: 7px;
+          height: 7px;
           border-radius: 50%;
           background: #ef4444;
           animation: il-pulse 2s ease-in-out infinite;
@@ -467,20 +551,89 @@ function InterviewLivePage() {
           50%       { opacity: 0.3; }
         }
 
-        /* Avatar card */
-        .il-avatar-card {
-          background: #fff;
-          border-radius: 24px;
-          padding: 2.5rem 2rem;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        .il-stage {
+          position: relative;
+          padding: 1rem;
+          background: radial-gradient(80% 80% at 50% 20%, #2f3038 0%, #222329 75%);
+        }
+
+        .il-remote-tile {
+          width: 100%;
+          height: 100%;
+          min-height: 48vh;
+          background: #2a2c33;
+          border: 1px solid #3c3d46;
+          border-radius: 12px;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 1.5rem;
-          width: 100%;
+          justify-content: center;
+          gap: 1rem;
+          position: relative;
+          overflow: hidden;
+        }
+        .il-remote-meta {
+          position: absolute;
+          left: 0.85rem;
+          bottom: 0.85rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 5px 10px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 500;
+          background: rgba(17, 17, 17, 0.62);
+          color: #fff;
+          backdrop-filter: blur(6px);
+        }
+        .il-remote-role {
+          color: #d4d4d8;
+          font-weight: 400;
         }
 
-        /* Avatar wrapper */
+        .il-self-tile {
+          position: absolute;
+          right: 1.6rem;
+          top: 1.6rem;
+          width: 170px;
+          aspect-ratio: 4 / 3;
+          border-radius: 12px;
+          overflow: hidden;
+          background: #17181d;
+          border: 1px solid #4b4d58;
+          box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .il-self-photo {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .il-self-fallback {
+          width: 64px;
+          height: 64px;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          font-size: 24px;
+          font-weight: 500;
+          color: #ede9fe;
+          background: #5b53c8;
+        }
+        .il-self-meta {
+          position: absolute;
+          left: 8px;
+          bottom: 8px;
+          font-size: 11px;
+          color: #fff;
+          background: rgba(0, 0, 0, 0.48);
+          border-radius: 999px;
+          padding: 3px 8px;
+        }
+
         .il-avatar-wrapper {
           width: 200px;
           height: 200px;
@@ -489,58 +642,81 @@ function InterviewLivePage() {
           justify-content: center;
         }
 
-        /* Question */
         .il-question {
-          background: #f9f9f8;
-          border-radius: 12px;
-          padding: 1rem 1.25rem;
-          font-size: 14px;
-          line-height: 1.6;
-          color: #333;
-          text-align: center;
-          border: 0.5px solid #e5e5e5;
-          font-weight: 400;
-          min-height: 80px;
+          width: min(900px, 92%);
+          background: rgba(255, 255, 255, 0.95);
+          border-radius: 10px;
+          padding: 0.9rem 1rem;
+          font-size: 13px;
+          line-height: 1.55;
+          color: #222;
+          text-align: left;
+          border: 1px solid #e5e7eb;
+          min-height: 70px;
           display: flex;
           align-items: center;
-          justify-content: center;
-          width: 100%;
+          justify-content: flex-start;
         }
 
-        /* Progress indicator */
         .il-progress {
           font-size: 11px;
-          color: rgba(255, 255, 255, 0.7);
-          font-weight: 400;
+          color: #d4d4d8;
+          font-weight: 500;
+          letter-spacing: 0.02em;
         }
 
-        /* Transcript preview */
+        .il-caption-wrap {
+          margin: 0 1rem;
+          border-radius: 10px;
+          border: 1px solid #3c3d46;
+          background: #2b2d34;
+          padding: 0.75rem 0.95rem;
+        }
+        .il-caption-title {
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: #9ca3af;
+          margin-bottom: 6px;
+        }
         .il-transcript {
           width: 100%;
-          background: #fafafa;
-          border-radius: 10px;
-          padding: 1rem;
           font-size: 13px;
           line-height: 1.5;
-          color: #666;
-          max-height: 120px;
+          color: #eceff1;
+          min-height: 22px;
+          max-height: 90px;
           overflow-y: auto;
-          font-weight: 300;
+          font-weight: 400;
         }
         .il-transcript:empty::before {
           content: 'Tu respuesta aparecerá aquí...';
-          color: #bbb;
+          color: #9ca3af;
         }
 
-        /* Controls */
-        .il-controls {
+        .il-controls-bar {
+          margin: 0.9rem 1rem 1rem;
+          background: #2a2b31;
+          border: 1px solid #3a3b43;
+          border-radius: 12px;
+          padding: 0.85rem;
+          display: grid;
+          grid-template-columns: 1fr auto;
+          align-items: center;
+          gap: 1rem;
+        }
+        .il-controls-left {
           display: flex;
-          gap: 1.5rem;
+          gap: 1.1rem;
+          align-items: center;
+        }
+        .il-controls-right {
+          display: flex;
           align-items: center;
         }
         .il-mic-btn, .il-end-btn, .il-submit-btn {
-          width: 64px;
-          height: 64px;
+          width: 56px;
+          height: 56px;
           border-radius: 50%;
           border: none;
           cursor: pointer;
@@ -550,13 +726,13 @@ function InterviewLivePage() {
           transition: transform 0.15s, opacity 0.15s;
           position: relative;
         }
-        .il-mic-btn { background: #111; }
+        .il-mic-btn { background: #4b5563; }
         .il-mic-btn.il-active { background: #22c55e; }
         .il-mic-btn.il-active::after {
           content: '';
           position: absolute;
-          width: 80px;
-          height: 80px;
+          width: 70px;
+          height: 70px;
           border-radius: 50%;
           border: 2px solid #22c55e;
           opacity: 0.4;
@@ -574,48 +750,107 @@ function InterviewLivePage() {
         .il-submit-btn { background: #22c55e; }
         .il-submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-        /* Label */
         .il-label {
-          font-size: 12px;
-          color: #888;
+          font-size: 11px;
+          color: #9ca3af;
           font-weight: 400;
           text-align: center;
+          margin-top: 6px;
         }
         .il-label.il-active {
           color: #22c55e;
           font-weight: 500;
         }
+
+        @media (max-width: 900px) {
+          .il-self-tile {
+            width: 132px;
+            right: 1.2rem;
+            top: 1.2rem;
+          }
+          .il-controls-bar {
+            grid-template-columns: 1fr;
+          }
+          .il-controls-right {
+            justify-content: flex-end;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .il-root { padding: 0; }
+          .il-call-shell {
+            min-height: 100vh;
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+          }
+          .il-self-tile {
+            width: 106px;
+          }
+          .il-avatar-wrapper {
+            width: 170px;
+            height: 170px;
+          }
+          .il-controls-left {
+            gap: 0.8rem;
+            justify-content: center;
+          }
+        }
       `}</style>
 
       <div className="il-root">
-        <div className="il-container">
+        <div className="il-call-shell">
 
-          <div className="il-timer">
-            <span className="il-timer-dot" />
-            {formatTime(callTime)}
+          <div className="il-call-header">
+            <div className="il-call-title">
+              <span className="il-status-dot" />
+              <span>Entrevista en vivo · {interviewerName}</span>
+            </div>
+            <div className="il-timer">
+              <span className="il-timer-dot" />
+              {formatTime(callTime)}
+            </div>
           </div>
 
-          <div className="il-progress">
-            Pregunta {currentQuestionIndex + 1} de {pendingQuestions.length}
-          </div>
-
-          <div className="il-avatar-card">
-
-            {/* ── New Robot Avatar ── */}
-            <div className="il-avatar-wrapper">
-              <RobotAvatar
-                talking={listening}
-                thinking={submitting}
-              />
+          <div className="il-stage">
+            <div className="il-remote-tile">
+              <div className="il-avatar-wrapper">
+                <RobotAvatar
+                  talking={listening}
+                  thinking={submitting}
+                />
+              </div>
+              <div className="il-question">{currentQuestion.question}</div>
+              <div className="il-remote-meta">
+                <span>{interviewerName}</span>
+                <span className="il-remote-role">Entrevistador</span>
+              </div>
             </div>
 
-            <div className="il-question">{currentQuestion.question}</div>
+            <div className="il-self-tile" aria-label="Vista previa del participante">
+              {localProfile.avatarDataUrl ? (
+                <img
+                  className="il-self-photo"
+                  src={localProfile.avatarDataUrl}
+                  alt={`Foto de perfil de ${selfLabel}`}
+                />
+              ) : (
+                <div className="il-self-fallback">{userInitial}</div>
+              )}
+              <div className="il-self-meta">{selfLabel}</div>
+            </div>
+          </div>
 
-            {transcript && (
-              <div className="il-transcript">{transcript}</div>
-            )}
+          <div className="il-caption-wrap">
+            <div className="il-caption-title">Transcripción en tiempo real</div>
+            <div className="il-transcript">{transcript}</div>
+          </div>
 
-            <div className="il-controls">
+          <div className="il-controls-bar">
+            <div className="il-controls-left">
+              <div className="il-progress">
+                Pregunta {currentQuestionIndex + 1} de {pendingQuestions.length}
+              </div>
 
               <div>
                 <button
@@ -643,25 +878,6 @@ function InterviewLivePage() {
                 </div>
               </div>
 
-              {transcript.trim() && (
-                <div>
-                  <button
-                    type="button"
-                    className="il-submit-btn"
-                    onClick={onSubmitAnswer}
-                    disabled={submitting}
-                    title="Enviar respuesta"
-                  >
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                      <path d="M5 12l5 5L20 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                  <div className="il-label">
-                    {submitting ? 'Enviando...' : 'Enviar'}
-                  </div>
-                </div>
-              )}
-
               <div>
                 <button
                   type="button"
@@ -677,6 +893,26 @@ function InterviewLivePage() {
                 <div className="il-label">Finalizar</div>
               </div>
 
+              <div>
+                <button
+                  type="button"
+                  className="il-submit-btn"
+                  onClick={onSubmitAnswer}
+                  disabled={submitting || !transcript.trim()}
+                  title="Enviar respuesta"
+                >
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                    <path d="M5 12l5 5L20 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+                <div className="il-label">
+                  {submitting ? 'Enviando...' : 'Enviar'}
+                </div>
+              </div>
+            </div>
+
+            <div className="il-controls-right">
+              <div className="il-label">Modo llamada sin cámara</div>
             </div>
           </div>
         </div>
