@@ -89,18 +89,22 @@ function RegisterPage() {
         .rg-page {
           font-family: 'DM Sans', sans-serif;
           min-height: 100vh;
-          display: flex; align-items: center; justify-content: center;
+          width: 100%;
+          display: block;
           background: #f5f5f4;
-          padding: 2rem;
+          padding: 0;
         }
 
         /* ── CARD ── */
         .rg-card {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          width: 100%; max-width: 820px;
-          border-radius: 16px; overflow: hidden;
-          box-shadow: 0 4px 32px rgba(0,0,0,0.08);
+          width: 100%;
+          min-height: 100vh;
+          max-width: none;
+          border-radius: 0;
+          overflow: hidden;
+          box-shadow: none;
         }
 
         /* ── PANEL IZQUIERDO ── */
@@ -260,7 +264,7 @@ function RegisterPage() {
           .rg-card { grid-template-columns: 1fr; }
           .rg-left { display: none; }
           .rg-row  { grid-template-columns: 1fr; }
-          .rg-page { padding: 1rem; }
+          .rg-page { padding: 0; }
         }
       `}</style>
 
