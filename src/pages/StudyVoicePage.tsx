@@ -6,7 +6,7 @@ import {
   startInterviewFromStudy,
   startStudySession,
 } from '../controllers/studyController'
-import { saveStudyModuleToHistory } from '../lib/studyModulesHistory'
+import { markStudyModuleCompleted, saveStudyModuleToHistory } from '../lib/studyModulesHistory'
 import type { InterviewType } from '../models/interview'
 import type { StudyDifficulty, StudyQuestion, StudyQuestionType, StudySession } from '../models/study'
 
@@ -212,6 +212,7 @@ function StudyVoicePage() {
     if (!session) return
     setStartingInterview(true); resetMessages()
     try {
+      markStudyModuleCompleted(session.id)
       const interview = await startInterviewFromStudy({ topic: session.topic, interviewType })
       navigate(`/dashboard/session/${interview.id}`)
     } catch (err) {
