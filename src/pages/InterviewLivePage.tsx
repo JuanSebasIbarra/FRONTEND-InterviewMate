@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
+  finishInterviewSession,
   loadInterviewSessionData,
   submitQuestionAnswer,
   type InterviewSessionData,
 } from '../controllers/interviewSessionController'
 import { getMe } from '../services/authService'
+import { getQuestionTTS } from '../services/questionService'
 
 type SpeechRecognitionAlternative = { transcript: string }
 type SpeechRecognitionResult = { isFinal: boolean; length: number; [index: number]: SpeechRecognitionAlternative }
@@ -271,6 +273,9 @@ function InterviewLivePage() {
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const listeningRef   = useRef(false)
   const animationRef   = useRef<number | null>(null)
+  const questionAudioRef = useRef<HTMLAudioElement | null>(null)
+  const questionAudioUrlRef = useRef<string | null>(null)
+  const ttsRequestRef = useRef(0)
 
   const [data, setData]                           = useState<InterviewSessionData | null>(null)
   const [loading, setLoading]                     = useState(true)
@@ -279,6 +284,11 @@ function InterviewLivePage() {
   const [callTime, setCallTime]                   = useState(0)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [submitting, setSubmitting]               = useState(false)
+  const [endingInterview, setEndingInterview]     = useState(false)
+  const [endCallError, setEndCallError]           = useState('')
+  const [ttsLoading, setTtsLoading]               = useState(false)
+  const [ttsPlaying, setTtsPlaying]               = useState(false)
+  const [ttsError, setTtsError]                   = useState('')
   const [authUsername, setAuthUsername]           = useState('')
 
   const speechRecognitionCtor =
@@ -369,10 +379,88 @@ function InterviewLivePage() {
     return () => clearInterval(timer)
   }, [])
 
+  const cleanupQuestionAudio = () => {
+    const currentAudio = questionAudioRef.current
+    if (currentAudio) {
+      currentAudio.pause()
+      currentAudio.src = ''
+      questionAudioRef.current = null
+    }
+
+    if (questionAudioUrlRef.current) {
+      URL.revokeObjectURL(questionAudioUrlRef.current)
+      questionAudioUrlRef.current = null
+    }
+
+    setTtsPlaying(false)
+  }
+
+  const playQuestionAudio = async (questionId: string, autoPlay = false) => {
+    if (!questionId || endingInterview) return
+
+    const requestId = Date.now()
+    ttsRequestRef.current = requestId
+
+    setTtsError('')
+    setTtsLoading(true)
+    cleanupQuestionAudio()
+
+    try {
+      const audioBlob = await getQuestionTTS(questionId)
+      if (ttsRequestRef.current !== requestId) return
+
+      const audioUrl = URL.createObjectURL(audioBlob)
+      questionAudioUrlRef.current = audioUrl
+
+      const audio = new Audio(audioUrl)
+      questionAudioRef.current = audio
+
+      audio.onended = () => {
+        setTtsPlaying(false)
+        cleanupQuestionAudio()
+      }
+
+      audio.onerror = () => {
+        setTtsPlaying(false)
+        setTtsError('No se pudo reproducir el audio de la pregunta.')
+      }
+
+      await audio.play()
+      setTtsPlaying(true)
+    } catch (error) {
+      if (ttsRequestRef.current !== requestId) return
+
+      const isAutoplayBlocked =
+        autoPlay &&
+        error instanceof DOMException &&
+        error.name === 'NotAllowedError'
+
+      setTtsError(
+        isAutoplayBlocked
+          ? 'Autoplay bloqueado. Pulsa “Repetir pregunta” para escucharla.'
+          : 'No se pudo generar el audio de la pregunta. Puedes continuar y reintentar.',
+      )
+      setTtsPlaying(false)
+    } finally {
+      if (ttsRequestRef.current === requestId) {
+        setTtsLoading(false)
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (!currentQuestion?.id || endingInterview) return
+    void playQuestionAudio(currentQuestion.id, true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentQuestion?.id, endingInterview])
+
   useEffect(() => () => {
     listeningRef.current = false
     recognitionRef.current?.abort()
+    ttsRequestRef.current = 0
+    cleanupQuestionAudio()
     if (animationRef.current) cancelAnimationFrame(animationRef.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const createAndStart = (lang: string) => {
@@ -417,10 +505,28 @@ function InterviewLivePage() {
     }
   }
 
-  const onEndCall = () => {
+  const onEndCall = async () => {
+    if (!sessionId || endingInterview) return
+
+    setEndCallError('')
+    setEndingInterview(true)
+    ttsRequestRef.current = 0
+    cleanupQuestionAudio()
     listeningRef.current = false
     recognitionRef.current?.abort()
-    navigate('/dashboard')
+
+    try {
+      await finishInterviewSession(sessionId)
+      navigate('/dashboard')
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message.trim()
+          ? error.message
+          : 'No se pudo finalizar la entrevista. Inténtalo nuevamente.'
+      setEndCallError(message)
+    } finally {
+      setEndingInterview(false)
+    }
   }
 
   const onSubmitAnswer = async () => {
@@ -433,7 +539,7 @@ function InterviewLivePage() {
       if (currentQuestionIndex < pendingQuestions.length - 1) {
         setCurrentQuestionIndex((i) => i + 1)
       } else {
-        navigate('/dashboard')
+        await onEndCall()
       }
     } catch (error) {
       console.error('Error submitting answer:', error)
@@ -490,9 +596,61 @@ function InterviewLivePage() {
           border-radius: 14px;
           background: #25262c;
           border: 1px solid #3a3b43;
-          display: grid;
-          grid-template-rows: auto 1fr auto auto;
+          display: flex;
+          flex-direction: column;
           overflow: hidden;
+        }
+
+        .il-content {
+          flex: 1;
+          min-height: 0;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 320px;
+        }
+
+        .il-main {
+          min-width: 0;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          border-right: 1px solid #363741;
+        }
+
+        .il-right-panel {
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          background: #23242b;
+        }
+
+        .il-panel-header {
+          padding: 1rem;
+          border-bottom: 1px solid #363741;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          background: #2a2b31;
+        }
+
+        .il-panel-actions {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .il-action-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .il-shell-end {
+          padding: 0.8rem 1rem 1rem;
+          border-top: 1px solid #363741;
+          background: #2a2b31;
+          display: flex;
+          justify-content: center;
         }
 
         .il-call-header {
@@ -718,7 +876,7 @@ function InterviewLivePage() {
           display: flex;
           align-items: center;
         }
-        .il-mic-btn, .il-end-btn, .il-submit-btn {
+        .il-mic-btn, .il-end-btn, .il-submit-btn, .il-tts-btn {
           width: 56px;
           height: 56px;
           border-radius: 50%;
@@ -814,12 +972,22 @@ function InterviewLivePage() {
           0%   { transform: scale(0.9); opacity: 0.35; }
           100% { transform: scale(1.4); opacity: 0; }
         }
-        .il-mic-btn:hover, .il-end-btn:hover, .il-submit-btn:hover {
+        .il-mic-btn:hover, .il-end-btn:hover, .il-submit-btn:hover, .il-tts-btn:hover {
           transform: scale(1.05);
           opacity: 0.9;
         }
+        .il-ctrl-btn:disabled,
+        .il-submit-btn:disabled,
+        .il-mic-btn:disabled,
+        .il-tts-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
+        }
         .il-end-btn    { background: #ef4444; }
+        .il-ctrl-end   { background: #ef4444; }
         .il-submit-btn { background: #22c55e; }
+        .il-tts-btn    { background: #3b82f6; }
         .il-submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
         .il-label {
@@ -834,7 +1002,52 @@ function InterviewLivePage() {
           font-weight: 500;
         }
 
+        .il-ctrl-label {
+          font-size: 11px;
+          color: #9ca3af;
+          font-weight: 400;
+          text-align: center;
+        }
+
+        .il-end-error {
+          margin: 0.5rem 1rem 0;
+          border-radius: 8px;
+          border: 1px solid rgba(248, 113, 113, 0.35);
+          background: rgba(127, 29, 29, 0.25);
+          color: #fecaca;
+          font-size: 12px;
+          padding: 0.55rem 0.7rem;
+        }
+
+        .il-processing {
+          margin-top: 0.45rem;
+          font-size: 12px;
+          color: #93c5fd;
+        }
+
+        .il-tts-feedback {
+          margin-top: 0.45rem;
+          font-size: 12px;
+          color: #93c5fd;
+        }
+
+        .il-tts-error {
+          margin-top: 0.35rem;
+          font-size: 11px;
+          color: #fca5a5;
+          line-height: 1.4;
+        }
+
         @media (max-width: 900px) {
+          .il-content {
+            grid-template-columns: 1fr;
+          }
+          .il-main {
+            border-right: none;
+          }
+          .il-right-panel {
+            border-top: 1px solid #363741;
+          }
           .il-self-tile {
             width: 132px;
             right: 1.2rem;
@@ -873,7 +1086,7 @@ function InterviewLivePage() {
       <div className="il-root">
         <div className="il-call-shell">
 
-          <div className="il-call-header">
+          <header className="il-call-header">
             <div className="il-call-title">
               <span className="il-status-dot" />
               <span>Entrevista en vivo · {interviewerName}</span>
@@ -882,151 +1095,180 @@ function InterviewLivePage() {
               <span className="il-timer-dot" />
               {formatTime(callTime)}
             </div>
-          </div>
-        </div>
+          </header>
 
-        {/* ── MAIN ── */}
-        <div className="il-main">
+          <div className="il-content">
+            {/* ── MAIN ── */}
+            <main className="il-main">
 
-          <div className="il-stage">
-            <div className="il-remote-tile">
-              <div className="il-avatar-wrapper">
-                <RobotAvatar
-                  talking={listening}
-                  thinking={submitting}
-                />
-              </div>
-              <div className="il-question">{currentQuestion.question}</div>
-              <div className="il-remote-meta">
-                <span>{interviewerName}</span>
-                <span className="il-remote-role">Entrevistador</span>
-              </div>
-            </div>
+              <div className="il-stage">
+                <div className="il-remote-tile">
+                  <div className="il-avatar-wrapper">
+                    <RobotAvatar
+                      talking={listening || ttsPlaying}
+                      thinking={submitting}
+                    />
+                  </div>
+                  <div className="il-question">{currentQuestion.question}</div>
+                  <div className="il-remote-meta">
+                    <span>{interviewerName}</span>
+                    <span className="il-remote-role">Entrevistador</span>
+                  </div>
+                </div>
 
-            <div className="il-self-tile" aria-label="Vista previa del participante">
-              {localProfile.avatarDataUrl ? (
-                <img
-                  className="il-self-photo"
-                  src={localProfile.avatarDataUrl}
-                  alt={`Foto de perfil de ${selfLabel}`}
-                />
-              ) : (
-                <div className="il-self-fallback">{userInitial}</div>
-              )}
-              <div className="il-self-meta">{selfLabel}</div>
-            </div>
-          </div>
-
-          <div className="il-caption-wrap">
-            <div className="il-caption-title">Transcripción en tiempo real</div>
-            <div className="il-transcript">{transcript}</div>
-          </div>
-
-          <div className="il-controls-bar">
-            <div className="il-controls-left">
-              <div className="il-progress">
-                Pregunta {currentQuestionIndex + 1} de {pendingQuestions.length}
-              </div>
-
-              <div>
-                <button
-                  type="button"
-                  className={`il-mic-btn ${listening ? 'il-active' : ''}`}
-                  onClick={onToggleMic}
-                  title={listening ? 'Silenciar' : 'Activar micrófono'}
-                >
-                  {listening ? (
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                      <rect x="8" y="3" width="8" height="13" rx="4" fill="white" />
-                      <path d="M4 12c0 4.4 3.6 8 8 8s8-3.6 8-8" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                      <line x1="12" y1="20" x2="12" y2="24" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
+                <div className="il-self-tile" aria-label="Vista previa del participante">
+                  {localProfile.avatarDataUrl ? (
+                    <img
+                      className="il-self-photo"
+                      src={localProfile.avatarDataUrl}
+                      alt={`Foto de perfil de ${selfLabel}`}
+                    />
                   ) : (
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                      <path d="M3 3l18 18M15 9v2c0 .6-.1 1.1-.3 1.6M9.5 9.5V6c0-1.4 1.1-2.5 2.5-2.5s2.5 1.1 2.5 2.5v6c0 .3 0 .6-.1.9" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                      <path d="M5 12c0 3.9 3.1 7 7 7 1 0 1.9-.2 2.8-.6" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                      <line x1="12" y1="19" x2="12" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
+                    <div className="il-self-fallback">{userInitial}</div>
                   )}
-                </button>
-                <div className={`il-label ${listening ? 'il-active' : ''}`}>
-                  {listening ? 'Escuchando' : 'Micrófono'}
+                  <div className="il-self-meta">{selfLabel}</div>
                 </div>
               </div>
-              <div className="il-user-pip-footer">Tú</div>
-            </div>
 
-          </div>
-
-          {/* ── RIGHT PANEL (transcript) ── */}
-          <div className="il-right-panel">
-            <div className="il-panel-header">
-              <span className="il-panel-title">Sesión en curso</span>
-              <span className="il-panel-sub">
-                {data.session.templatePosition} · {data.session.templateEnterprise}
-              </span>
-            </div>
-            <div className="il-panel-body">
-
-              {/* Current question */}
-              <div className="il-info-block">
-                <div className="il-block-eyebrow">Pregunta {currentQuestionIndex + 1}</div>
-                <div className="il-question-text">{currentQuestion.question}</div>
+              <div className="il-caption-wrap">
+                <div className="il-caption-title">Transcripción en tiempo real</div>
+                <div className="il-transcript">{transcript}</div>
               </div>
 
-              <div>
-                <button
-                  type="button"
-                  className="il-end-btn"
-                  onClick={onEndCall}
-                  title="Finalizar entrevista"
-                >
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                    <path d="M3 9c0-1.1.9-2 2-2h2c1.1 0 2 .9 2 2v.5c1.3-1 3-1.5 5-1.5s3.7.5 5 1.5V9c0-1.1.9-2 2-2h2c1.1 0 2 .9 2 2v6c0 1.1-.9 2-2 2h-2c-1.1 0-2-.9-2-2v-.5c-1.3 1-3 1.5-5 1.5s-3.7-.5-5-1.5v.5c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V9z" fill="white" />
-                    <line x1="6" y1="6" x2="18" y2="18" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                  </svg>
-                </button>
-                <div className="il-label">Finalizar</div>
-              </div>
+              <div className="il-controls-bar">
+                <div className="il-controls-left">
+                  <div className="il-progress">
+                    Pregunta {currentQuestionIndex + 1} de {pendingQuestions.length}
+                  </div>
 
-              <div>
-                <button
-                  type="button"
-                  className="il-submit-btn"
-                  onClick={onSubmitAnswer}
-                  disabled={submitting || !transcript.trim()}
-                  title="Enviar respuesta"
-                >
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                    <path d="M5 12l5 5L20 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-                <div className="il-label">
-                  {submitting ? 'Enviando...' : 'Enviar'}
+                  <div>
+                    <button
+                      type="button"
+                      className={`il-mic-btn ${listening ? 'il-active' : ''}`}
+                      onClick={onToggleMic}
+                      disabled={endingInterview}
+                      title={listening ? 'Silenciar' : 'Activar micrófono'}
+                    >
+                      {listening ? (
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                          <rect x="8" y="3" width="8" height="13" rx="4" fill="white" />
+                          <path d="M4 12c0 4.4 3.6 8 8 8s8-3.6 8-8" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                          <line x1="12" y1="20" x2="12" y2="24" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      ) : (
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                          <path d="M3 3l18 18M15 9v2c0 .6-.1 1.1-.3 1.6M9.5 9.5V6c0-1.4 1.1-2.5 2.5-2.5s2.5 1.1 2.5 2.5v6c0 .3 0 .6-.1.9" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                          <path d="M5 12c0 3.9 3.1 7 7 7 1 0 1.9-.2 2.8-.6" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                          <line x1="12" y1="19" x2="12" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      )}
+                    </button>
+                    <div className={`il-label ${listening ? 'il-active' : ''}`}>
+                      {listening ? 'Escuchando' : 'Micrófono'}
+                    </div>
+                  </div>
+                  <div className="il-user-pip-footer">Tú</div>
                 </div>
               </div>
-            </div>
+            </main>
 
-            <div className="il-controls-right">
-              <div className="il-label">Modo llamada sin cámara</div>
-            </div>
+            {/* ── RIGHT PANEL (transcript) ── */}
+            <aside className="il-right-panel">
+              <div className="il-panel-header">
+                <span className="il-panel-title">Sesión en curso</span>
+                <span className="il-panel-sub">
+                  {data.session.templatePosition} · {data.session.templateEnterprise}
+                </span>
+              </div>
+              <div className="il-panel-body">
+
+                {/* Current question */}
+                <div className="il-info-block">
+                  <div className="il-block-eyebrow">Pregunta {currentQuestionIndex + 1}</div>
+                  <div className="il-question-text">{currentQuestion.question}</div>
+                  {ttsPlaying ? (
+                    <div className="il-tts-feedback">Reproduciendo pregunta...</div>
+                  ) : null}
+                  {ttsError ? (
+                    <div className="il-tts-error">{ttsError}</div>
+                  ) : null}
+                </div>
+
+                <div className="il-panel-actions">
+                  <div className="il-action-item">
+                    <button
+                      type="button"
+                      className="il-tts-btn"
+                      onClick={() => {
+                        void playQuestionAudio(currentQuestion.id, false)
+                      }}
+                      disabled={ttsLoading || endingInterview}
+                      title="Repetir pregunta"
+                    >
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                        <path d="M14.5 7.5a4.5 4.5 0 010 9" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M17.5 5a8 8 0 010 14" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M3 10v4a1 1 0 001 1h3.5L12 19V5L7.5 9H4a1 1 0 00-1 1z" fill="white" />
+                      </svg>
+                    </button>
+                    <div className="il-label">
+                      {ttsLoading ? 'Cargando audio...' : 'Repetir'}
+                    </div>
+                  </div>
+
+                  <div className="il-action-item">
+                    <button
+                      type="button"
+                      className="il-submit-btn"
+                      onClick={onSubmitAnswer}
+                      disabled={submitting || endingInterview || !transcript.trim()}
+                      title="Enviar respuesta"
+                    >
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                        <path d="M5 12l5 5L20 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                    <div className="il-label">
+                      {submitting ? 'Enviando...' : 'Enviar'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="il-controls-right">
+                <div className="il-label">Modo llamada sin cámara</div>
+                {endingInterview ? (
+                  <div className="il-processing">Procesando resultados...</div>
+                ) : null}
+              </div>
+            </aside>
           </div>
 
-          {/* End call */}
-          <div className="il-ctrl-item">
-            <button
-              type="button"
-              className="il-ctrl-btn il-ctrl-end"
-              onClick={onEndCall}
-              title="Finalizar entrevista"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M3 9c0-1.1.9-2 2-2h2c1.1 0 2 .9 2 2v.5c1.3-1 3-1.5 5-1.5s3.7.5 5 1.5V9c0-1.1.9-2 2-2h2c1.1 0 2 .9 2 2v6c0 1.1-.9 2-2 2h-2c-1.1 0-2-.9-2-2v-.5c-1.3 1-3 1.5-5 1.5s-3.7-.5-5-1.5v.5c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V9z" fill="white" />
-                <line x1="6" y1="6" x2="18" y2="18" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
-            </button>
-            <div className="il-ctrl-label">Finalizar</div>
-          </div>
+          {endCallError ? (
+            <div className="il-end-error" role="alert">
+              {endCallError}
+            </div>
+          ) : null}
+
+          <footer className="il-shell-end">
+            <div className="il-ctrl-item">
+              <button
+                type="button"
+                className="il-ctrl-btn il-ctrl-end"
+                onClick={onEndCall}
+                disabled={endingInterview}
+                title="Finalizar entrevista"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M3 9c0-1.1.9-2 2-2h2c1.1 0 2 .9 2 2v.5c1.3-1 3-1.5 5-1.5s3.7.5 5 1.5V9c0-1.1.9-2 2-2h2c1.1 0 2 .9 2 2v6c0 1.1-.9 2-2 2h-2c-1.1 0-2-.9-2-2v-.5c-1.3 1-3 1.5-5 1.5s-3.7-.5-5-1.5v.5c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V9z" fill="white" />
+                  <line x1="6" y1="6" x2="18" y2="18" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+              </button>
+              <div className="il-ctrl-label">
+                {endingInterview ? 'Finalizando...' : 'Finalizar'}
+              </div>
+            </div>
+          </footer>
 
         </div>
 
