@@ -33,7 +33,7 @@ function extractErrorMessage(payload: unknown, fallback: string) {
   return fallback
 }
 
-export async function httpRequest<T>(path: string, init?: RequestInit): Promise<T> {
+function buildRequestHeaders(init?: RequestInit) {
   const token = getAuthToken()
   const headers = new Headers(init?.headers ?? {})
 
@@ -45,18 +45,30 @@ export async function httpRequest<T>(path: string, init?: RequestInit): Promise<
     headers.set('Authorization', `Bearer ${token}`)
   }
 
+  return headers
+}
+
+async function throwHttpError(response: Response) {
+  const raw = await response.text()
+  const parsed = tryParseJson(raw)
+  throw new Error(extractErrorMessage(parsed, 'No se pudo completar la operación.'))
+}
+
+export async function httpRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = buildRequestHeaders(init)
+
   const response = await fetch(buildApiUrl(path), {
     ...init,
     headers,
     credentials: useCredentials ? 'include' : init?.credentials,
   })
 
+  if (!response.ok) {
+    await throwHttpError(response)
+  }
+
   const raw = await response.text()
   const parsed = tryParseJson(raw)
-
-  if (!response.ok) {
-    throw new Error(extractErrorMessage(parsed, 'No se pudo completar la operación.'))
-  }
 
   if (isWrappedResponse<T>(parsed)) {
     if (!parsed.success) {
@@ -66,4 +78,20 @@ export async function httpRequest<T>(path: string, init?: RequestInit): Promise<
   }
 
   return (parsed as T) ?? (null as T)
+}
+
+export async function httpRequestBlob(path: string, init?: RequestInit): Promise<Blob> {
+  const headers = buildRequestHeaders(init)
+
+  const response = await fetch(buildApiUrl(path), {
+    ...init,
+    headers,
+    credentials: useCredentials ? 'include' : init?.credentials,
+  })
+
+  if (!response.ok) {
+    await throwHttpError(response)
+  }
+
+  return response.blob()
 }
