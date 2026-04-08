@@ -4,7 +4,6 @@ import { RouterProvider } from 'react-router-dom'
 import { appRouter } from './router'
 import { clearAuthToken, getAuthToken, saveAuthToken } from './lib/auth'
 import { API_BASE_URL, buildApiUrl } from './lib/api'
-import './App.css'
 
 type User = {
   id: number
