@@ -42,33 +42,19 @@ export const appRouter = createBrowserRouter([
       {
         path: 'dashboard',
         element: (
-          <PrivateRoute>
             <DashboardPage />
-          </PrivateRoute>
         ),
       },
       {
         path: 'dashboard/session/:sessionId',
         element: (
-          <PrivateRoute>
             <InterviewSessionPage />
-          </PrivateRoute>
-        ),
-      },
-      {
-        path: 'interview/live/:sessionId',
-        element: (
-          <PrivateRoute>
-            <InterviewLivePage />
-          </PrivateRoute>
         ),
       },
       {
         path: 'settings',
         element: (
-          <PrivateRoute>
             <SettingsPage />
-          </PrivateRoute>
         ),
       },
       {
@@ -78,9 +64,7 @@ export const appRouter = createBrowserRouter([
       {
         path: 'study/live',
         element: (
-          <PrivateRoute>
             <StudyVoicePage />
-          </PrivateRoute>
         ),
       },
       {
