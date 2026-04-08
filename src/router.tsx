@@ -1,15 +1,13 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom'
-import PrivateRoute from './components/PrivateRoute'
 import Main from './MainLayout'
 import DashboardPage from './pages/DashboardPage'
-import InterviewSessionPage from './pages/InterviewSessionPage'
-import InterviewLivePage from './pages/InterviewLivePage'
+import SessionPage from './pages/SessionPage'
+import TemplateCreationPage from './pages/TemplateCreationPage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import RegisterPage from './pages/RegisterPage'
 import SettingsPage from './pages/SettingsPage'
-import StudyVoicePage from './pages/StudyVoicePage'
 
 export const appRouter = createBrowserRouter([
   {
@@ -46,25 +44,21 @@ export const appRouter = createBrowserRouter([
         ),
       },
       {
-        path: 'dashboard/session/:sessionId',
+        path: 'Template',
         element: (
-            <InterviewSessionPage />
+            <TemplateCreationPage />
+        ),
+      },
+      {
+        path: 'session',
+        element: (
+            <SessionPage />
         ),
       },
       {
         path: 'settings',
         element: (
             <SettingsPage />
-        ),
-      },
-      {
-        path: 'study',
-        element: <Navigate to="/study/live" replace />,
-      },
-      {
-        path: 'study/live',
-        element: (
-            <StudyVoicePage />
         ),
       },
       {
