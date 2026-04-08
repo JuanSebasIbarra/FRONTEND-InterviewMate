@@ -6,8 +6,8 @@ type TemplateCardProps = {
 
 function TemplateCard({ name, onAdd, onHistory }: TemplateCardProps) {
   return (
-    <article className="border border-zinc-300 bg-white p-4 shadow-sm">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <article className="flex flex-col border border-zinc-300 bg-white p-4 shadow-sm hover:bg-black/5 transition rounded-lg">
+      <div className="flex flex-col gap-4">
         <span className="text-sm font-medium text-zinc-800">{name}</span>
 
         <div className="flex items-center gap-2">
