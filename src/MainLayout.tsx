@@ -17,7 +17,9 @@ function Main() {
     location.pathname.startsWith('/interview/live') ||
     location.pathname.startsWith('/dashboard') ||
     location.pathname.startsWith('/study/live') ||
-    location.pathname.startsWith('/settings')
+    location.pathname.startsWith('/settings') ||
+    location.pathname.startsWith('/templates') ||
+    location.pathname.startsWith('/Template')
 
   const onLogout = () => {
     clearAuthToken()

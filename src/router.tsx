@@ -44,16 +44,18 @@ export const appRouter = createBrowserRouter([
         ),
       },
       {
+        path: 'sessions',
+        element: <SessionPage />,
+      },
+      {
         path: 'Template',
         element: (
             <TemplateCreationPage />
         ),
       },
       {
-        path: 'session',
-        element: (
-            <SessionPage />
-        ),
+        path: 'templates/new',
+        element: <TemplateCreationPage />,
       },
       {
         path: 'settings',
