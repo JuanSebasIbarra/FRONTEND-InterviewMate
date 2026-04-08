@@ -34,7 +34,7 @@ function LoggedUserMenu({ username, onLogout }: LoggedUserMenuProps) {
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex w-full items-center gap-3 border border-zinc-300 bg-white p-3 text-left transition hover:bg-zinc-100"
+        className="flex w-full items-center gap-3 border border-zinc-300 bg-white p-3 text-left transition hover:bg-interviewmate-blue/25 rounded-md"
       >
         <span className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-300 bg-stone-100 text-xs font-semibold text-zinc-700">
           {getInitials(username)}
@@ -43,11 +43,11 @@ function LoggedUserMenu({ username, onLogout }: LoggedUserMenuProps) {
       </button>
 
       {isOpen ? (
-        <div className="absolute bottom-[calc(100%+0.5rem)] left-0 w-full border border-zinc-300 bg-white p-2 shadow-lg">
+        <div className="absolute bottom-[calc(100%+0.5rem)] left-0 w-full border border-zinc-300 bg-white p-2 shadow-lg rounded-md">
           <button
             type="button"
             onClick={onLogout}
-            className="w-full px-3 py-2 text-left text-sm text-red-600 transition hover:bg-zinc-100"
+            className="w-full px-3 py-2 text-left text-sm text-red-600 transition hover:bg-interviewmate-blue/25"
           >
             Cerrar sesión
           </button>
