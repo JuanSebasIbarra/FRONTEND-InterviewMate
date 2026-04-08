@@ -1,29 +1,33 @@
 import LoggedUserMenu from './LoggedUserMenu'
+import InterviewMateIcon from '../../assets/interviewmate-icon.svg'
 
 type DashboardSidebarProps = {
-  onProfile: () => void
-  onSettings: () => void
   onLogout: () => void
 }
 
-function DashboardSidebar({ onProfile, onSettings, onLogout }: DashboardSidebarProps) {
+function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
   return (
-    <aside className="flex min-h-[420px] flex-col border border-zinc-300 bg-zinc-50 p-6">
-      <div className="space-y-2">
-        <button
-          type="button"
-          onClick={onProfile}
-          className="w-full border border-zinc-300 bg-white px-4 py-3 text-left text-sm text-zinc-700 transition hover:bg-zinc-100"
+    <aside className="flex min-h-105 flex-col border border-zinc-300 bg-zinc-50 px-3 py-6 w-2xs">
+      <div className="flex flex-col items-center gap-2">
+        <a
+          href='/'
+          className="flex w-full px-4 py-3 text-left text-lg items-center justify-center text-zinc-700 transition hover:bg-interviewmate-blue/25"
+        >
+          <img src={InterviewMateIcon} alt="icon" className="w-16"/>
+          InterviewMate
+        </a>
+        <a
+          href='/'
+          className="w-full border-b border-black/75 px-4 py-3 text-left text-sm rounded-t-md hover:scale-105 text-zinc-700 transition hover:bg-interviewmate-blue/25"
         >
           Perfil
-        </button>
-        <button
-          type="button"
-          onClick={onSettings}
-          className="w-full border border-zinc-300 bg-white px-4 py-3 text-left text-sm text-zinc-700 transition hover:bg-zinc-100"
+        </a>
+        <a
+          href='/'
+          className="w-full border-b border-black/75 px-4 py-3 text-left text-sm rounded-t-md hover:scale-105 text-zinc-700 transition hover:bg-interviewmate-blue/25"
         >
           Configuración
-        </button>
+        </a>
       </div>
 
       <div className="mt-auto pt-6">
