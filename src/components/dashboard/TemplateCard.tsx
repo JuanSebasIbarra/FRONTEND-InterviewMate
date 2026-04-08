@@ -6,7 +6,7 @@ type TemplateCardProps = {
 
 function TemplateCard({ name, onAdd, onHistory }: TemplateCardProps) {
   return (
-    <article className="rounded-2xl border border-zinc-300 bg-white p-4 shadow-sm">
+    <article className="border border-zinc-300 bg-white p-4 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-sm font-medium text-zinc-800">{name}</span>
 
@@ -14,16 +14,16 @@ function TemplateCard({ name, onAdd, onHistory }: TemplateCardProps) {
           <button
             type="button"
             onClick={onAdd}
-            className="rounded-full bg-zinc-900 px-4 py-2 text-xs font-medium text-white transition hover:opacity-80"
+            className="bg-zinc-900 px-4 py-2 text-xs font-medium text-white transition hover:opacity-80"
           >
-            Add
+            Nuevo
           </button>
           <button
             type="button"
             onClick={onHistory}
-            className="rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
+            className="border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
           >
-            Historial
+            Ver más
           </button>
         </div>
       </div>

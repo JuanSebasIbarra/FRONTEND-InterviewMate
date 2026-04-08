@@ -8,7 +8,7 @@ type TemplateCardsSectionProps = {
 
 function TemplateCardsSection({ templates, onAdd, onHistory }: TemplateCardsSectionProps) {
   return (
-    <section className="rounded-3xl border border-zinc-300 bg-stone-50 p-5 sm:p-7">
+    <section className="border border-zinc-300 bg-stone-50 p-5 sm:p-7">
       <div className="mb-5 border-b border-zinc-200 pb-4">
         <h2 className="text-xs uppercase tracking-widest text-zinc-500">Template cards</h2>
       </div>

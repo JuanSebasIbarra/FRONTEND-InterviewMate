@@ -33,15 +33,15 @@ function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-100 px-3 py-3 sm:px-6 sm:py-6">
-      <main className="mx-auto grid min-h-[calc(100vh-1.5rem)] max-w-7xl grid-cols-1 gap-4 rounded-3xl border border-zinc-300 bg-white p-4 sm:min-h-[calc(100vh-3rem)] sm:p-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-6 lg:p-8">
+    <div className="h-screen w-screen bg-stone-100">
+      <main className="grid h-full w-full grid-cols-1 gap-4 border border-zinc-300 bg-white p-4 sm:p-6 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-6 lg:p-8">
         <DashboardSidebar
           onProfile={handleProfile}
           onSettings={handleSettings}
           onLogout={handleLogout}
         />
 
-        <section className="space-y-4 rounded-3xl border border-zinc-300 bg-stone-50 p-5 sm:p-7">
+        <section className="space-y-4 border border-zinc-300 bg-stone-50 p-5 sm:p-7">
           <DashboardHeader />
           <TemplateCardsSection
             templates={TEMPLATE_NAMES}
