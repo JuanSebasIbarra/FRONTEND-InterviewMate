@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage'
 import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import RegisterPage from './pages/RegisterPage'
 import SettingsPage from './pages/SettingsPage'
+import ResultsPage from './pages/ResultsPage'
 
 export const appRouter = createBrowserRouter([
   {
@@ -62,6 +63,10 @@ export const appRouter = createBrowserRouter([
         element: (
             <SettingsPage />
         ),
+      },
+      {
+        path: 'results',
+        element: <ResultsPage />,
       },
       {
         path: '*',
