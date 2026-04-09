@@ -8,6 +8,8 @@ import LoginPage from './pages/LoginPage'
 import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import RegisterPage from './pages/RegisterPage'
 import SettingsPage from './pages/SettingsPage'
+import PrivateRoute from './components/PrivateRoute'
+import PublicRoute from './components/PublicRoute'
 
 export const appRouter = createBrowserRouter([
   {
@@ -16,15 +18,27 @@ export const appRouter = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <LandingPage />,
+        element: (
+          <PublicRoute>
+            <LandingPage />
+          </PublicRoute>
+        ),
       },
       {
         path: 'login',
-        element: <LoginPage />,
+        element: (
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        ),
       },
       {
         path: 'register',
-        element: <RegisterPage />,
+        element: (
+          <PublicRoute>
+            <RegisterPage />
+          </PublicRoute>
+        ),
       },
       {
         /**
@@ -40,27 +54,49 @@ export const appRouter = createBrowserRouter([
       {
         path: 'dashboard',
         element: (
+          <PrivateRoute>
             <DashboardPage />
+          </PrivateRoute>
         ),
       },
       {
         path: 'sessions',
-        element: <SessionPage />,
+        element: (
+          <PrivateRoute>
+            <SessionPage />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: 'sessions/:templateId',
+        element: (
+          <PrivateRoute>
+            <SessionPage />
+          </PrivateRoute>
+        ),
       },
       {
         path: 'Template',
         element: (
+          <PrivateRoute>
             <TemplateCreationPage />
+          </PrivateRoute>
         ),
       },
       {
         path: 'templates/new',
-        element: <TemplateCreationPage />,
+        element: (
+          <PrivateRoute>
+            <TemplateCreationPage />
+          </PrivateRoute>
+        ),
       },
       {
         path: 'settings',
         element: (
+          <PrivateRoute>
             <SettingsPage />
+          </PrivateRoute>
         ),
       },
       {
