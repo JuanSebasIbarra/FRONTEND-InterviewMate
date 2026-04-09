@@ -76,14 +76,6 @@ export const appRouter = createBrowserRouter([
         ),
       },
       {
-        path: 'Template',
-        element: (
-          <PrivateRoute>
-            <TemplateCreationPage />
-          </PrivateRoute>
-        ),
-      },
-      {
         path: 'templates/new',
         element: (
           <PrivateRoute>
