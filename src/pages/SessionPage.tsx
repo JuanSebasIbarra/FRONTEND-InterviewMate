@@ -4,7 +4,7 @@ import SessionHistoryCard from '../components/SessionHistoryCard'
 import DashboardSidebar from '../components/dashboard/DashboardSidebar'
 import { clearAuthToken } from '../lib/auth'
 import type { InterviewSession, InterviewTemplate } from '../models/interview'
-import { getSessionsByTemplate } from '../services/sessionService'
+import { beginSession, createSession, getSessionsByTemplate } from '../services/sessionService'
 import { getTemplateById } from '../services/templateService'
 
 function formatSessionDate(value?: string) {
@@ -28,6 +28,7 @@ function SessionPage() {
   const [sessions, setSessions] = useState<InterviewSession[]>([])
   const [template, setTemplate] = useState<InterviewTemplate | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isCreatingInterview, setIsCreatingInterview] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
@@ -80,6 +81,27 @@ function SessionPage() {
     navigate('/login')
   }
 
+  const handleStartInterview = async () => {
+    if (!templateId || isCreatingInterview) return
+
+    setIsCreatingInterview(true)
+    setErrorMessage('')
+
+    try {
+      const createdSession = await createSession({ templateId })
+      const activeSession = await beginSession(createdSession.id)
+      navigate(`/session/${activeSession.id}/interview`)
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo iniciar la entrevista. Intenta nuevamente.'
+      setErrorMessage(message)
+    } finally {
+      setIsCreatingInterview(false)
+    }
+  }
+
   const pageTitle = template
     ? `${template.position} - ${template.enterprise}`
     : 'Sesiones de plantilla'
@@ -128,9 +150,11 @@ function SessionPage() {
                 </h2>
                 <button
                   type="button"
+                  onClick={handleStartInterview}
+                  disabled={!templateId || isCreatingInterview}
                   className="rounded-full bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white transition hover:opacity-80"
                 >
-                  Entrevista
+                  {isCreatingInterview ? 'Iniciando...' : 'Entrevista'}
                 </button>
               </div>
 
