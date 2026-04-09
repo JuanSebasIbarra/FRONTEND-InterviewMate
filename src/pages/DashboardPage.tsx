@@ -72,6 +72,13 @@ function DashboardPage() {
               <h2 className="font-serif text-[2rem] font-normal tracking-[-0.02em] text-zinc-900">
                 Plantillas
               </h2>
+              <button
+                type="button"
+                onClick={handleAdd}
+                className="rounded-full bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white transition hover:opacity-80"
+              >
+                Nueva plantilla
+              </button>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
