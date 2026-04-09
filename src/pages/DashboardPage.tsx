@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DashboardSidebar from '../components/dashboard/DashboardSidebar'
+import SessionModeModal from '../components/dashboard/SessionModeModal'
 import TemplateCard from '../components/dashboard/TemplateCard'
 import { clearAuthToken } from '../lib/auth'
 import type { InterviewTemplate } from '../models/interview'
@@ -11,6 +12,8 @@ function DashboardPage() {
   const [templates, setTemplates] = useState<InterviewTemplate[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
+  const [selectedTemplate, setSelectedTemplate] = useState<InterviewTemplate | null>(null)
+  const [isSessionModeModalOpen, setIsSessionModeModalOpen] = useState(false)
 
   useEffect(() => {
     let isMounted = true
@@ -48,6 +51,28 @@ function DashboardPage() {
 
   const handleAdd = () => {
     navigate('/templates/new')
+  }
+
+  const handleOpenSessionModeModal = (template: InterviewTemplate) => {
+    setSelectedTemplate(template)
+    setIsSessionModeModalOpen(true)
+  }
+
+  const handleCloseSessionModeModal = () => {
+    setIsSessionModeModalOpen(false)
+    setSelectedTemplate(null)
+  }
+
+  const handleStartStudy = () => {
+    if (!selectedTemplate) return
+    navigate(`/sessions/${selectedTemplate.id}?mode=study`)
+    handleCloseSessionModeModal()
+  }
+
+  const handleStartInterview = () => {
+    if (!selectedTemplate) return
+    navigate(`/sessions/${selectedTemplate.id}`)
+    handleCloseSessionModeModal()
   }
 
   const handleOpenTemplate = (templateId: string) => {
@@ -98,7 +123,7 @@ function DashboardPage() {
                 <TemplateCard
                   key={template.id}
                   name={`${template.position} - ${template.enterprise}`}
-                  onAdd={handleAdd}
+                  onAdd={() => handleOpenSessionModeModal(template)}
                   onHistory={() => handleOpenTemplate(template.id)}
                   onOpen={() => handleOpenTemplate(template.id)}
                 />
@@ -107,6 +132,14 @@ function DashboardPage() {
           </article>
         </section>
       </main>
+
+      <SessionModeModal
+        isOpen={isSessionModeModalOpen}
+        templateName={selectedTemplate ? `${selectedTemplate.position} - ${selectedTemplate.enterprise}` : 'Template'}
+        onClose={handleCloseSessionModeModal}
+        onStudy={handleStartStudy}
+        onInterview={handleStartInterview}
+      />
     </div>
   )
 }

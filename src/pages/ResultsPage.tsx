@@ -203,7 +203,7 @@ function ResultsPage() {
                 {MOCK_FEEDBACK.map((item) => (
                   <li
                     key={item.id}
-                    className="rounded-lg border border-[#638ea3]/30 bg-[#638ea3]/5 px-5 py-4"
+                    className="rounded-lg border border-interviewmate-blue/30 bg-interviewmate-blue/5 px-5 py-4"
                   >
                     <p className="mb-1 text-sm font-medium text-zinc-900">{item.title}</p>
                     <p className="text-sm leading-relaxed text-zinc-600">{item.description}</p>
