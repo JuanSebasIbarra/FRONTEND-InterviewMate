@@ -5,6 +5,10 @@ export function getMyTemplates() {
   return httpRequest<InterviewTemplate[]>('/api/v1/interview-templates')
 }
 
+export function getTemplateById(templateId: string) {
+  return httpRequest<InterviewTemplate>(`/api/v1/interview-templates/${templateId}`)
+}
+
 export function createTemplate(request: CreateInterviewTemplateRequest) {
   return httpRequest<InterviewTemplate>('/api/v1/interview-templates', {
     method: 'POST',

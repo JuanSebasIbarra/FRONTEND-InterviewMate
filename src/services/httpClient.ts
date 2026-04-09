@@ -3,6 +3,11 @@ import { buildApiUrl } from '../lib/api'
 import type { ApiErrorPayload, ApiResponse } from '../models/api'
 
 const useCredentials = String(import.meta.env.VITE_USE_CREDENTIALS ?? '').toLowerCase() === 'true'
+const PUBLIC_ENDPOINTS = new Set(['/auth/login', '/auth/register'])
+
+function normalizePath(path: string) {
+  return path.startsWith('/') ? path : `/${path}`
+}
 
 function tryParseJson(raw: string) {
   if (!raw) return null
@@ -34,8 +39,14 @@ function extractErrorMessage(payload: unknown, fallback: string) {
 }
 
 export async function httpRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const normalizedPath = normalizePath(path)
+  const requiresAuth = !PUBLIC_ENDPOINTS.has(normalizedPath)
   const token = getAuthToken()
   const headers = new Headers(init?.headers ?? {})
+
+  if (requiresAuth && !token.trim()) {
+    throw new Error('Debes iniciar sesion para realizar esta accion.')
+  }
 
   if (!headers.has('Content-Type') && init?.body) {
     headers.set('Content-Type', 'application/json')
@@ -45,7 +56,7 @@ export async function httpRequest<T>(path: string, init?: RequestInit): Promise<
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  const response = await fetch(buildApiUrl(path), {
+  const response = await fetch(buildApiUrl(normalizedPath), {
     ...init,
     headers,
     credentials: useCredentials ? 'include' : init?.credentials,
