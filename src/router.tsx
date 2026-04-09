@@ -107,7 +107,7 @@ export const appRouter = createBrowserRouter([
         element: <ResultsPage />,
       },
       {
-        path: 'study/:sessionId',
+        path: 'sessions/:sessionId/study',
         element: (
           <PrivateRoute>
             <StudyPage />
