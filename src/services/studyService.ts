@@ -2,6 +2,7 @@ import type {
   GenerateStudyQuestionsRequest,
   StartStudyRequest,
   StudySession,
+  StudySessionSummary,
 } from '../models/study'
 import { httpRequest } from './httpClient'
 
@@ -21,4 +22,8 @@ export function generateStudyQuestions(request: GenerateStudyQuestionsRequest) {
 
 export function getStudyById(studyId: string) {
   return httpRequest<StudySession>(`/study/${studyId}`)
+}
+
+export function getMyStudySessions() {
+  return httpRequest<StudySessionSummary[]>('/study/me')
 }

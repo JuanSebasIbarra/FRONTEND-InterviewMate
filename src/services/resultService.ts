@@ -8,3 +8,9 @@ export function getMyResults() {
 export function getResultBySession(sessionId: string) {
   return httpRequest<InterviewResult>(`/api/v1/results/session/${sessionId}`)
 }
+
+export function generateSessionReview(sessionId: string) {
+  return httpRequest<InterviewResult>(`/api/v1/interview/sessions/${sessionId}/review`, {
+    method: 'POST',
+  })
+}
