@@ -1,57 +1,61 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DashboardSidebar from '../components/dashboard/DashboardSidebar'
 import TemplateCard from '../components/dashboard/TemplateCard'
-import SessionModeModal from '../components/dashboard/SessionModeModal'
-
-const TEMPLATE_NAMES = [
-  'Ingeniero de software en Google',
-  'Frontend Developer React',
-  'Backend Engineer Node.js',
-]
+import { clearAuthToken } from '../lib/auth'
+import type { InterviewTemplate } from '../models/interview'
+import { getMyTemplates } from '../services/templateService'
 
 function DashboardPage() {
   const navigate = useNavigate()
-  const [modalOpen, setModalOpen] = useState(false)
-  const [selectedTemplate, setSelectedTemplate] = useState('')
+  const [templates, setTemplates] = useState<InterviewTemplate[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadTemplates = async () => {
+      setIsLoading(true)
+      setErrorMessage('')
+
+      try {
+        const payload = await getMyTemplates()
+        if (!isMounted) return
+        setTemplates(payload ?? [])
+      } catch (error) {
+        if (!isMounted) return
+        const message = error instanceof Error ? error.message : 'No se pudieron cargar las plantillas.'
+        setErrorMessage(message)
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadTemplates()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const handleLogout = () => {
+    clearAuthToken()
     navigate('/login')
   }
 
-  const handleAdd = (templateName: string) => {
-    setSelectedTemplate(templateName)
-    setModalOpen(true)
+  const handleAdd = () => {
+    navigate('/templates/new')
   }
 
-  const handleCloseModal = () => {
-    setModalOpen(false)
-    setSelectedTemplate('')
-  }
-
-  const handleStudyMode = () => {
-    handleCloseModal()
-    navigate('/')
-  }
-
-  const handleInterviewMode = () => {
-    handleCloseModal()
-    navigate('/')
-  }
-
-  const handleHistory = () => {
-    navigate('/')
+  const handleOpenTemplate = (templateId: string) => {
+    navigate(`/sessions/${templateId}`)
   }
 
   return (
     <div className="h-screen w-screen bg-stone-100 flex">
-      <SessionModeModal
-        isOpen={modalOpen}
-        templateName={selectedTemplate}
-        onClose={handleCloseModal}
-        onStudy={handleStudyMode}
-        onInterview={handleInterviewMode}
-      />
       <DashboardSidebar onLogout={handleLogout} />
 
       <main className="w-full h-full sm:h-full sm:lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-6">
@@ -71,12 +75,25 @@ function DashboardPage() {
             </div>
 
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {TEMPLATE_NAMES.map((template) => (
+              {isLoading && (
+                <p className="text-sm text-zinc-600">Cargando plantillas...</p>
+              )}
+
+              {!isLoading && errorMessage && (
+                <p className="text-sm text-red-700">{errorMessage}</p>
+              )}
+
+              {!isLoading && !errorMessage && templates.length === 0 && (
+                <p className="text-sm text-zinc-600">Aun no tienes plantillas creadas.</p>
+              )}
+
+              {!isLoading && !errorMessage && templates.map((template) => (
                 <TemplateCard
-                  key={template}
-                  name={template}
+                  key={template.id}
+                  name={`${template.position} - ${template.enterprise}`}
                   onAdd={handleAdd}
-                  onHistory={handleHistory}
+                  onHistory={() => handleOpenTemplate(template.id)}
+                  onOpen={() => handleOpenTemplate(template.id)}
                 />
               ))}
             </div>
