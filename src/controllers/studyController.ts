@@ -10,16 +10,17 @@ function normalizeOptionalText(value: string) {
 }
 
 export async function startStudySession(payload: {
+  templateId: string
   topic: string
-  audioFile: string
 }): Promise<StudySession> {
-  const request: StartStudyRequest = {
-    topic: normalizeOptionalText(payload.topic),
-    audioFile: normalizeOptionalText(payload.audioFile),
+  const templateId = payload.templateId.trim()
+  if (!templateId) {
+    throw new Error('Debes seleccionar una plantilla para iniciar estudio.')
   }
 
-  if (!request.topic && !request.audioFile) {
-    throw new Error('Debes ingresar un tema o una referencia de audio para iniciar estudio.')
+  const request: StartStudyRequest = {
+    templateId,
+    topic: normalizeOptionalText(payload.topic),
   }
 
   return startStudy(request)
