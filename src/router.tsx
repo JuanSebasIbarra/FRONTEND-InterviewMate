@@ -63,14 +63,6 @@ export const appRouter = createBrowserRouter([
         ),
       },
       {
-        path: 'sessions',
-        element: (
-          <PrivateRoute>
-            <SessionPage />
-          </PrivateRoute>
-        ),
-      },
-      {
         path: 'sessions/:templateId',
         element: (
           <PrivateRoute>
@@ -103,7 +95,7 @@ export const appRouter = createBrowserRouter([
         ),
       },
       {
-        path: 'results',
+        path: 'sessions/:sessionId/results',
         element: <ResultsPage />,
       },
       {
