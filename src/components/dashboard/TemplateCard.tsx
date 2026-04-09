@@ -1,6 +1,6 @@
 type TemplateCardProps = {
   name: string
-  onAdd: () => void
+  onAdd: (name: string) => void
   onHistory: () => void
 }
 
@@ -13,7 +13,7 @@ function TemplateCard({ name, onAdd, onHistory }: TemplateCardProps) {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={onAdd}
+            onClick={() => onAdd(name)}
             className="bg-zinc-900 px-4 py-2 text-xs font-medium text-white transition hover:opacity-80"
           >
             Nuevo
