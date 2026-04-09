@@ -9,6 +9,7 @@ import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import RegisterPage from './pages/RegisterPage'
 import SettingsPage from './pages/SettingsPage'
 import ResultsPage from './pages/ResultsPage'
+import InterviewLivePage from './pages/InterviewLivePage'
 import PrivateRoute from './components/PrivateRoute'
 import PublicRoute from './components/PublicRoute'
 
@@ -89,6 +90,14 @@ export const appRouter = createBrowserRouter([
         element: (
           <PrivateRoute>
             <SettingsPage />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: 'sessions/:sessionId/interview',
+        element: (
+          <PrivateRoute>
+            <InterviewLivePage />
           </PrivateRoute>
         ),
       },
