@@ -1,116 +1,251 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import type { InterviewResult, InterviewSession } from '../models/interview'
+import type { StudySession } from '../models/study'
+import { getStudySessionAnswers } from '../lib/studySessionAnswers'
+import { getQuestionsBySession } from '../services/questionService'
+import { generateSessionReview, getResultBySession } from '../services/resultService'
+import { getSessionById } from '../services/sessionService'
+import { getStudyById } from '../services/studyService'
 
-type QuestionStatus = 'correct' | 'improvable' | 'incorrect'
+type Tab = 'questions' | 'feedback' | 'result'
+type SessionMode = 'interview' | 'study'
 
-type Question = {
-  id: number
+type NormalizedQuestion = {
+  id: string
+  orderIndex: number
   text: string
-  status: QuestionStatus
+  answer?: string
+  score?: number | null
+  aiFeedback?: string | null
 }
 
-type FeedbackItem = {
-  id: number
-  title: string
-  description: string
-}
-
-const MOCK_TEMPLATE = 'Entrevista: Shinobi Engineer'
-const MOCK_SCORE = 5
-const MOCK_SCORE_MAX = 10
-const MOCK_OPINION =
-  'El entrevistado es apto para el puesto, sin embargo carece de habilidades sólidas con shuriken y manejo avanzado de herramientas de ninjutsu moderno. Se recomienda profundizar en estos temas antes de la siguiente evaluación.'
-
-const MOCK_QUESTIONS: Question[] = [
-  { id: 1, text: '¿Cuál es tu experiencia con React?', status: 'correct' },
-  { id: 2, text: '¿Cómo manejas el estado global en una aplicación?', status: 'improvable' },
-  { id: 3, text: '¿Qué es el virtual DOM?', status: 'incorrect' },
-  { id: 4, text: '¿Qué patrones de diseño conoces?', status: 'improvable' },
-  { id: 5, text: '¿Cómo optimizarías el rendimiento de una app?', status: 'correct' },
-]
-
-const MOCK_FEEDBACK: FeedbackItem[] = [
-  {
-    id: 1,
-    title: 'Refuerza conceptos de estado global',
-    description:
-      'Se recomienda estudiar herramientas como Zustand, Redux o Context API con mayor profundidad, ya que las respuestas dadas fueron parcialmente correctas.',
-  },
-  {
-    id: 2,
-    title: 'Profundiza en patrones de diseño',
-    description:
-      'Conocer patrones como Observer, Factory o Strategy es clave para roles senior. Practica implementando al menos uno por semana.',
-  },
-  {
-    id: 3,
-    title: 'Domina los fundamentos del DOM',
-    description:
-      'La respuesta sobre el virtual DOM fue incorrecta. Se sugiere revisar la documentación oficial de React y repasar cómo React reconcilia cambios.',
-  },
-]
-
-const STATUS_CONFIG: Record<
-  QuestionStatus,
-  { label: string; labelClass: string; dotClass: string }
-> = {
-  correct: {
-    label: 'Correcto',
-    labelClass: 'text-emerald-700 bg-emerald-50 border border-emerald-200',
-    dotClass: 'bg-emerald-500',
-  },
-  improvable: {
-    label: 'Mejorable',
-    labelClass: 'text-amber-700 bg-amber-50 border border-amber-200',
-    dotClass: 'bg-amber-400',
-  },
-  incorrect: {
-    label: 'Incorrecto',
-    labelClass: 'text-red-700 bg-red-50 border border-red-200',
-    dotClass: 'bg-red-500',
-  },
+type StudyReview = {
+  generalFeedback: string
+  strengths: string
+  weaknesses: string
+  totalScore: number
+  status: 'PASSED' | 'FAILED' | 'PENDING_REVIEW'
+  generatedAt: string
 }
 
 function ScoreBadge({ score, max }: { score: number; max: number }) {
-  const pct = score / max
+  const pct = max > 0 ? score / max : 0
   const color =
     pct >= 0.7 ? 'text-emerald-600' : pct >= 0.5 ? 'text-amber-500' : 'text-red-500'
-  const emoji = pct >= 0.7 ? '🏆' : pct >= 0.5 ? '🔥' : '😓'
-  return (
-    <span className={`inline-flex items-center gap-1.5 font-medium ${color}`}>
-      {score}/{max}
-      <span>{emoji}</span>
-    </span>
-  )
-}
 
-type Tab = 'results' | 'feedback'
+  return <span className={`inline-flex items-center gap-1.5 font-medium ${color}`}>{score}/{max}</span>
+}
 
 function ResultsPage() {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<Tab>('results')
+  const { sessionId } = useParams<{ sessionId: string }>()
+  const [activeTab, setActiveTab] = useState<Tab>('result')
+  const [mode, setMode] = useState<SessionMode>('interview')
+  const [session, setSession] = useState<InterviewSession | null>(null)
+  const [studySession, setStudySession] = useState<StudySession | null>(null)
+  const [result, setResult] = useState<InterviewResult | null>(null)
+  const [studyReview, setStudyReview] = useState<StudyReview | null>(null)
+  const [questions, setQuestions] = useState<NormalizedQuestion[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    if (!sessionId) {
+      setErrorMessage('No se encontro la sesion a evaluar.')
+      setIsLoading(false)
+      return
+    }
+
+    let mounted = true
+
+    const loadData = async () => {
+      setIsLoading(true)
+      setErrorMessage('')
+
+      const studySnapshot = getStudySessionAnswers(sessionId)
+
+      try {
+        const interviewSession = await getSessionById(sessionId)
+        const interviewQuestions = await getQuestionsBySession(sessionId)
+
+        if (!mounted) return
+
+        setMode('interview')
+        setSession(interviewSession)
+        setStudySession(null)
+        setQuestions(
+          [...interviewQuestions]
+            .sort((a, b) => a.orderIndex - b.orderIndex)
+            .map((question) => ({
+              id: question.id,
+              orderIndex: question.orderIndex,
+              text: question.question,
+              answer: question.answer ?? '',
+              score: question.score ?? null,
+              aiFeedback: question.aiFeedback ?? null,
+            })),
+        )
+
+        try {
+          const generatedResult = await generateSessionReview(sessionId)
+          if (!mounted) return
+          setResult(generatedResult)
+        } catch {
+          try {
+            const existingResult = await getResultBySession(sessionId)
+            if (!mounted) return
+            setResult(existingResult)
+          } catch {
+            if (!mounted) return
+            setErrorMessage('No se pudo generar el resultado de la entrevista.')
+          }
+        }
+      } catch {
+        try {
+          const studyPayload = await getStudyById(sessionId)
+          if (!mounted) return
+
+          const storedAnswers = studySnapshot?.answers ?? []
+          const answersById = storedAnswers.reduce<Record<string, string>>((acc, answer) => {
+            acc[answer.questionId] = answer.answer
+            return acc
+          }, {})
+
+          const normalizedStudyQuestions = [...(studyPayload.questions ?? [])]
+            .sort((a, b) => a.orderIndex - b.orderIndex)
+            .map((question) => ({
+              id: question.id,
+              orderIndex: question.orderIndex,
+              text: question.questionText,
+              answer: answersById[question.id] ?? '',
+              score: null,
+              aiFeedback: null,
+            }))
+
+          const answeredCount = normalizedStudyQuestions.filter((question) => Boolean(question.answer?.trim())).length
+          const totalQuestions = normalizedStudyQuestions.length || 1
+          const completionRate = Math.round((answeredCount / totalQuestions) * 100)
+          const pendingCount = Math.max(totalQuestions - answeredCount, 0)
+
+          setMode('study')
+          setSession(null)
+          setStudySession(studyPayload)
+          setQuestions(normalizedStudyQuestions)
+          setStudyReview({
+            generalFeedback:
+              answeredCount > 0
+                ? `Completaste ${answeredCount} de ${normalizedStudyQuestions.length} preguntas. La sesion de estudio quedo lista para revisar tu avance.`
+                : 'Aun no respondiste ninguna pregunta en esta sesion de estudio.',
+            strengths:
+              answeredCount > 0
+                ? 'Ya tienes respuestas registradas y eso te permite repasar el contenido con contexto.'
+                : 'Cuando respondas preguntas, aqui se resumiran tus fortalezas.',
+            weaknesses:
+              pendingCount > 0
+                ? `Te quedan ${pendingCount} preguntas por responder o repasar.`
+                : 'No hay preguntas pendientes en esta sesion.',
+            totalScore: completionRate,
+            status: answeredCount >= normalizedStudyQuestions.length ? 'PASSED' : 'PENDING_REVIEW',
+            generatedAt: new Date().toISOString(),
+          })
+        } catch {
+          if (!mounted) return
+          setErrorMessage('No se pudo cargar la sesion para mostrar resultados.')
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadData()
+
+    return () => {
+      mounted = false
+    }
+  }, [sessionId])
+
+  const templateLabel = useMemo(() => {
+    if (mode === 'study') {
+      return studySession?.topic || 'Resultado de estudio'
+    }
+
+    if (result?.position || result?.enterprise) {
+      const position = result.position ?? 'Posicion'
+      const enterprise = result.enterprise ?? 'Empresa'
+      return `${position} - ${enterprise}`
+    }
+
+    if (session?.templatePosition || session?.templateEnterprise) {
+      const position = session.templatePosition ?? 'Posicion'
+      const enterprise = session.templateEnterprise ?? 'Empresa'
+      return `${position} - ${enterprise}`
+    }
+
+    return 'Resultado de entrevista'
+  }, [mode, result?.enterprise, result?.position, session?.templateEnterprise, session?.templatePosition, studySession?.topic])
+
+  const answeredCount = useMemo(
+    () => questions.filter((question) => Boolean(question.answer?.trim())).length,
+    [questions],
+  )
+
+  const totalQuestions = questions.length
+
+  const displayReview = mode === 'study'
+    ? studyReview
+    : result
+      ? {
+          generalFeedback: result.generalFeedback || 'No hay resumen disponible.',
+          strengths: result.strengths || 'Sin datos.',
+          weaknesses: result.weaknesses || 'Sin datos.',
+          totalScore: result.totalScore ?? 0,
+          status: result.status,
+          generatedAt: result.generatedAt,
+        }
+      : null
 
   const handleHome = () => navigate('/dashboard')
-  const handleRetry = () => navigate('/sessions')
+  const handleRetry = () => {
+    const templateId = mode === 'study' ? studySession?.templateId : session?.templateId
+    if (templateId) {
+      navigate(`/sessions/${templateId}`)
+      return
+    }
+
+    navigate('/dashboard')
+  }
 
   return (
-    <div className="h-screen w-screen bg-stone-100 flex overflow-hidden">
-      {/* ── Local sidebar ── */}
-      <aside className="flex min-h-full flex-col border-r border-zinc-300 bg-zinc-50 px-3 py-6 w-52 shrink-0">
+    <div className="flex h-screen w-screen overflow-hidden bg-stone-100">
+      <aside className="flex min-h-full w-52 shrink-0 flex-col border-r border-zinc-300 bg-zinc-50 px-3 py-6">
         <p className="mb-4 px-2 text-[10px] uppercase tracking-widest text-zinc-400">
-          Navegación
+          Navegacion
         </p>
         <nav className="flex flex-col gap-2">
           <button
             type="button"
-            onClick={() => setActiveTab('results')}
+            onClick={() => setActiveTab('result')}
             className={`w-full rounded-md px-4 py-2.5 text-left text-sm font-medium transition ${
-              activeTab === 'results'
+              activeTab === 'result'
                 ? 'bg-emerald-400 text-white shadow-sm'
                 : 'border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100'
             }`}
           >
-            Resultados
+            Resultado
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('questions')}
+            className={`w-full rounded-md px-4 py-2.5 text-left text-sm font-medium transition ${
+              activeTab === 'questions'
+                ? 'bg-emerald-400 text-white shadow-sm'
+                : 'border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100'
+            }`}
+          >
+            Preguntas
           </button>
           <button
             type="button"
@@ -126,95 +261,147 @@ function ResultsPage() {
         </nav>
       </aside>
 
-      {/* ── Main content ── */}
       <main className="flex flex-1 flex-col overflow-hidden">
         <div className="flex flex-1 flex-col overflow-y-auto p-5 sm:p-7">
-          {/* Header */}
           <header className="mb-6 border-b border-zinc-200 pb-5">
             <p className="text-xs uppercase tracking-widest text-zinc-500">
-              {activeTab === 'results' ? 'Resumen de sesión' : 'Recomendaciones de la IA'}
+              {activeTab === 'result'
+                ? 'Resultado final'
+                : activeTab === 'questions'
+                  ? 'Resumen de preguntas'
+                  : 'Revision de desempeno'}
             </p>
             <h1 className="mt-2 font-serif text-4xl font-normal tracking-[-0.02em] text-zinc-900 sm:text-5xl">
-              {activeTab === 'results' ? 'Resultados' : 'Feedback'}
+              {activeTab === 'result' ? 'Resultado' : activeTab === 'questions' ? 'Preguntas' : 'Feedback'}
             </h1>
           </header>
 
-          {activeTab === 'results' ? (
-            /* ── RESULTS tab ── */
+          {errorMessage && (
+            <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {errorMessage}
+            </p>
+          )}
+
+          {activeTab === 'result' && (
             <section className="flex flex-1 flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-              {/* Template + score */}
               <div className="mb-6 border-b border-zinc-100 pb-4">
-                <p className="font-serif text-lg text-zinc-800">{MOCK_TEMPLATE}</p>
+                <p className="font-serif text-lg text-zinc-800">{templateLabel}</p>
                 <div className="mt-1 flex items-center gap-2 text-sm text-zinc-500">
-                  Calificación:&nbsp;
-                  <ScoreBadge score={MOCK_SCORE} max={MOCK_SCORE_MAX} />
+                  {isLoading ? (
+                    'Cargando resultado...'
+                  ) : displayReview ? (
+                    <>
+                      Calificacion:&nbsp;
+                      <ScoreBadge score={displayReview.totalScore} max={100} />
+                    </>
+                  ) : (
+                    'Resultado no disponible aun'
+                  )}
                 </div>
               </div>
 
-              {/* Questions list */}
-              <div className="flex-1">
-                <p className="mb-3 text-xs uppercase tracking-widest text-zinc-400">
-                  Lista de preguntas
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <article className="rounded-lg border border-zinc-200 bg-stone-50 px-4 py-3">
+                  <p className="text-xs uppercase tracking-widest text-zinc-400">Preguntas</p>
+                  <p className="mt-1 text-xl font-medium text-zinc-900">{totalQuestions}</p>
+                </article>
+                <article className="rounded-lg border border-zinc-200 bg-stone-50 px-4 py-3">
+                  <p className="text-xs uppercase tracking-widest text-zinc-400">Respondidas</p>
+                  <p className="mt-1 text-xl font-medium text-zinc-900">{answeredCount}</p>
+                </article>
+                <article className="rounded-lg border border-zinc-200 bg-stone-50 px-4 py-3">
+                  <p className="text-xs uppercase tracking-widest text-zinc-400">Estado</p>
+                  <p className="mt-1 text-xl font-medium text-zinc-900">
+                    {displayReview?.status ?? (mode === 'study' ? 'PENDING_REVIEW' : result?.status ?? 'PENDING')}
+                  </p>
+                </article>
+              </div>
+
+              <div className="mt-6 rounded-lg border border-zinc-200 bg-stone-50 p-4">
+                <p className="mb-1 text-xs uppercase tracking-widest text-zinc-400">Resumen</p>
+                <p className="text-sm leading-relaxed text-zinc-700">
+                  {displayReview?.generalFeedback || 'Aun no hay resumen generado para esta sesion.'}
                 </p>
+              </div>
+            </section>
+          )}
+
+          {activeTab === 'questions' && (
+            <section className="flex flex-1 flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+              <div className="mb-4 border-b border-zinc-100 pb-4">
+                <p className="font-serif text-lg text-zinc-800">{templateLabel}</p>
+                <p className="mt-1 text-sm text-zinc-500">Preguntas de la sesion y estado de respuesta</p>
+              </div>
+
+              {isLoading ? (
+                <p className="text-sm text-zinc-600">Cargando preguntas...</p>
+              ) : questions.length === 0 ? (
+                <p className="text-sm text-zinc-600">No hay preguntas disponibles para esta sesion.</p>
+              ) : (
                 <ul className="space-y-3">
-                  {MOCK_QUESTIONS.map((q, idx) => {
-                    const cfg = STATUS_CONFIG[q.status]
+                  {questions.map((question, index) => {
+                    const isAnswered = Boolean(question.answer?.trim())
                     return (
                       <li
-                        key={q.id}
+                        key={question.id}
                         className="flex items-start gap-3 rounded-lg border border-zinc-100 bg-stone-50 px-4 py-3"
                       >
                         <span className="mt-0.5 shrink-0 text-xs font-medium text-zinc-400">
-                          {idx + 1}.
+                          {index + 1}.
                         </span>
-                        <span className="flex-1 text-sm text-zinc-800">{q.text}</span>
+                        <span className="flex-1 text-sm text-zinc-800">{question.text}</span>
                         <span
-                          className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${cfg.labelClass}`}
+                          className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            isAnswered
+                              ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+                              : 'border border-zinc-200 bg-zinc-100 text-zinc-700'
+                          }`}
                         >
-                          <span
-                            className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle ${cfg.dotClass}`}
-                          />
-                          {cfg.label}
+                          {isAnswered ? 'Respondida' : 'Sin responder'}
                         </span>
                       </li>
                     )
                   })}
                 </ul>
-              </div>
-
-              {/* Opinion */}
-              <div className="mt-6 rounded-lg border border-zinc-200 bg-stone-50 p-4">
-                <p className="mb-1 text-xs uppercase tracking-widest text-zinc-400">
-                  Opinión del contratador
-                </p>
-                <p className="text-sm leading-relaxed text-zinc-700">{MOCK_OPINION}</p>
-              </div>
+              )}
             </section>
-          ) : (
-            /* ── FEEDBACK tab ── */
+          )}
+
+          {activeTab === 'feedback' && (
             <section className="flex flex-1 flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
               <div className="mb-4 border-b border-zinc-100 pb-4">
-                <p className="font-serif text-lg text-zinc-800">{MOCK_TEMPLATE}</p>
+                <p className="font-serif text-lg text-zinc-800">{templateLabel}</p>
                 <p className="mt-1 text-sm text-zinc-500">
-                  Recomendaciones generadas por IA basadas en tus respuestas
+                  El feedback y el resultado se generan automaticamente al abrir esta pantalla.
                 </p>
               </div>
-              <ul className="flex-1 space-y-4">
-                {MOCK_FEEDBACK.map((item) => (
-                  <li
-                    key={item.id}
-                    className="rounded-lg border border-interviewmate-blue/30 bg-interviewmate-blue/5 px-5 py-4"
-                  >
-                    <p className="mb-1 text-sm font-medium text-zinc-900">{item.title}</p>
-                    <p className="text-sm leading-relaxed text-zinc-600">{item.description}</p>
-                  </li>
-                ))}
-              </ul>
+
+              {isLoading ? (
+                <p className="text-sm text-zinc-600">Generando feedback...</p>
+              ) : displayReview ? (
+                <div className="space-y-4">
+                  <article className="rounded-lg border border-zinc-200 bg-stone-50 p-4">
+                    <p className="mb-1 text-xs uppercase tracking-widest text-zinc-400">Feedback general</p>
+                    <p className="text-sm leading-relaxed text-zinc-700">{displayReview.generalFeedback}</p>
+                  </article>
+
+                  <article className="rounded-lg border border-zinc-200 bg-stone-50 p-4">
+                    <p className="mb-1 text-xs uppercase tracking-widest text-zinc-400">Fortalezas</p>
+                    <p className="text-sm leading-relaxed text-zinc-700">{displayReview.strengths}</p>
+                  </article>
+
+                  <article className="rounded-lg border border-zinc-200 bg-stone-50 p-4">
+                    <p className="mb-1 text-xs uppercase tracking-widest text-zinc-400">Puntos a mejorar</p>
+                    <p className="text-sm leading-relaxed text-zinc-700">{displayReview.weaknesses}</p>
+                  </article>
+                </div>
+              ) : (
+                <p className="text-sm text-zinc-600">No hay feedback disponible para esta sesion.</p>
+              )}
             </section>
           )}
         </div>
 
-        {/* ── Bottom action bar ── */}
         <div className="flex items-center gap-3 border-t border-zinc-200 bg-stone-50 px-6 py-4">
           <button
             type="button"
