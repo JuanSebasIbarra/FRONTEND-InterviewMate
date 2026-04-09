@@ -87,6 +87,8 @@ function InterviewLivePage() {
   const [fallbackQuestionIndex, setFallbackQuestionIndex] = useState(0)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answersByQuestion, setAnswersByQuestion] = useState<Record<string, TranscriptEntry[]>>({})
+  const [typedAnswersByQuestion, setTypedAnswersByQuestion] = useState<Record<string, string>>({})
+  const [answeredQuestionIds, setAnsweredQuestionIds] = useState<string[]>([])
   const [isRecording, setIsRecording] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSavingAnswer, setIsSavingAnswer] = useState(false)
@@ -122,6 +124,17 @@ function InterviewLivePage() {
 
         setSession(data.session)
         setQuestions(sortedQuestions)
+        setTypedAnswersByQuestion(
+          sortedQuestions.reduce<Record<string, string>>((acc, question) => {
+            acc[question.id] = question.answer ?? ''
+            return acc
+          }, {}),
+        )
+        setAnsweredQuestionIds(
+          sortedQuestions
+            .filter((question) => Boolean(question.answer?.trim()))
+            .map((question) => question.id),
+        )
       } catch (error) {
         if (!mounted) return
 
@@ -150,6 +163,21 @@ function InterviewLivePage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handlePopState = () => {
+      window.history.pushState(null, '', window.location.href)
+    }
+
+    window.history.pushState(null, '', window.location.href)
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [])
+
   const fallbackQuestion = FALLBACK_QUESTIONS[fallbackQuestionIndex] ?? FALLBACK_QUESTIONS[0]
   const hasBackendQuestions = questions.length > 0
   const questionKey = hasBackendQuestions
@@ -159,10 +187,13 @@ function InterviewLivePage() {
     ? questions[currentQuestionIndex]?.question ?? ''
     : fallbackQuestion
   const currentEntries = answersByQuestion[questionKey] ?? []
+  const currentTypedAnswer = typedAnswersByQuestion[questionKey] ?? ''
 
   const hasAnyAnswerInCurrentQuestion = useMemo(
-    () => currentEntries.some((entry) => entry.text.trim().length > 0),
-    [currentEntries],
+    () =>
+      currentEntries.some((entry) => entry.text.trim().length > 0) ||
+      currentTypedAnswer.trim().length > 0,
+    [currentEntries, currentTypedAnswer],
   )
 
   const stopRecording = () => {
@@ -247,24 +278,34 @@ function InterviewLivePage() {
   }
 
   const persistCurrentAnswerIfNeeded = async () => {
-    if (!hasBackendQuestions) return
+    if (!hasBackendQuestions) return { ok: true, answeredQuestionId: null as string | null }
 
     const currentQuestion = questions[currentQuestionIndex]
-    if (!currentQuestion) return
+    if (!currentQuestion) return { ok: true, answeredQuestionId: null as string | null }
 
-    const answer = (answersByQuestion[currentQuestion.id] ?? [])
+    const typedAnswer = (typedAnswersByQuestion[currentQuestion.id] ?? '').trim()
+
+    const transcriptAnswer = (answersByQuestion[currentQuestion.id] ?? [])
       .map((entry) => entry.text.trim())
       .filter(Boolean)
       .join(' ')
       .trim()
 
-    if (!answer) return
+    const answer = typedAnswer || transcriptAnswer
+
+    if (!answer) return { ok: true, answeredQuestionId: null as string | null }
 
     setIsSavingAnswer(true)
     try {
       await submitQuestionAnswer(currentQuestion.id, answer)
+      setAnsweredQuestionIds((prev) => {
+        if (prev.includes(currentQuestion.id)) return prev
+        return [...prev, currentQuestion.id]
+      })
+      return { ok: true, answeredQuestionId: currentQuestion.id }
     } catch {
       setErrorMessage('No se pudo guardar la respuesta. Puedes intentarlo nuevamente.')
+      return { ok: false, answeredQuestionId: null as string | null }
     } finally {
       setIsSavingAnswer(false)
     }
@@ -275,13 +316,23 @@ function InterviewLivePage() {
       stopRecording()
     }
 
-    await persistCurrentAnswerIfNeeded()
+    const persistResult = await persistCurrentAnswerIfNeeded()
+    if (!persistResult.ok) return
 
     if (hasBackendQuestions) {
       const isLastQuestion = currentQuestionIndex >= questions.length - 1
       if (isLastQuestion) {
+        const answeredCount = answeredQuestionIds.includes(persistResult.answeredQuestionId ?? '')
+          ? answeredQuestionIds.length
+          : answeredQuestionIds.length + (persistResult.answeredQuestionId ? 1 : 0)
+
+        if (answeredCount < 1) {
+          setErrorMessage('Debes responder al menos 1 pregunta antes de finalizar la sesion.')
+          return
+        }
+
         if (!sessionId) {
-          navigate('/results')
+          navigate('/dashboard', { replace: true })
           return
         }
 
@@ -292,7 +343,7 @@ function InterviewLivePage() {
           setErrorMessage('No se pudo cerrar la sesion correctamente.')
         } finally {
           setIsFinishingSession(false)
-          navigate('/results')
+          navigate(`/sessions/${sessionId}/results`, { replace: true })
         }
         return
       }
@@ -303,7 +354,11 @@ function InterviewLivePage() {
 
     const isLastFallbackQuestion = fallbackQuestionIndex >= FALLBACK_QUESTIONS.length - 1
     if (isLastFallbackQuestion) {
-      navigate('/results')
+      if (sessionId) {
+        navigate(`/sessions/${sessionId}/results`, { replace: true })
+      } else {
+        navigate('/dashboard', { replace: true })
+      }
       return
     }
 
@@ -326,11 +381,11 @@ function InterviewLivePage() {
 
     const templateId = session?.templateId
     if (templateId) {
-      navigate(`/sessions/${templateId}`)
+      navigate(`/sessions/${templateId}`, { replace: true })
       return
     }
 
-    navigate('/sessions')
+    navigate('/dashboard', { replace: true })
   }
 
   const nextButtonLabel = hasBackendQuestions && currentQuestionIndex >= questions.length - 1
@@ -341,14 +396,6 @@ function InterviewLivePage() {
     <div className="h-screen w-screen overflow-hidden bg-stone-100 px-2 py-3 sm:px-4 sm:py-4">
       <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-md border border-zinc-300 bg-stone-50 px-3 py-4 shadow-sm sm:px-5 sm:py-5">
         <div className="mb-6 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => openExitModal('cancel')}
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100"
-          >
-            Salir entrevista
-          </button>
-
           <button
             type="button"
             onClick={() => openExitModal('stop')}
@@ -393,6 +440,25 @@ function InterviewLivePage() {
                   </p>
                 ))}
               </div>
+            </div>
+
+            <div className="rounded-md border border-zinc-300 bg-white px-3 py-4 sm:px-4">
+              <p className="mb-2 text-xs uppercase tracking-widest text-zinc-500">
+                Respuesta por texto
+              </p>
+              <textarea
+                value={currentTypedAnswer}
+                onChange={(event) => {
+                  const value = event.target.value
+                  setTypedAnswersByQuestion((prev) => ({
+                    ...prev,
+                    [questionKey]: value,
+                  }))
+                }}
+                rows={4}
+                placeholder="Tambien puedes responder escribiendo aqui..."
+                className="w-full rounded-md border border-zinc-300 bg-stone-50 px-3 py-2 text-sm text-zinc-800 outline-none transition focus:border-zinc-500"
+              />
             </div>
 
             {errorMessage && (
