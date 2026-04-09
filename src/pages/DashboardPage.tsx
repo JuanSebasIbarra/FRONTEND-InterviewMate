@@ -65,13 +65,13 @@ function DashboardPage() {
 
   const handleStartStudy = () => {
     if (!selectedTemplate) return
-    navigate(`/sessions/${selectedTemplate.id}?mode=study`)
+    navigate(`/sessions/${selectedTemplate.id}?mode=study`, { replace: true })
     handleCloseSessionModeModal()
   }
 
   const handleStartInterview = () => {
     if (!selectedTemplate) return
-    navigate(`/sessions/${selectedTemplate.id}`)
+    navigate(`/sessions/${selectedTemplate.id}`, { replace: true })
     handleCloseSessionModeModal()
   }
 

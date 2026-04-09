@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import SessionHistoryCard from '../components/SessionHistoryCard'
 import DashboardSidebar from '../components/dashboard/DashboardSidebar'
 import { clearAuthToken } from '../lib/auth'
 import type { InterviewSession, InterviewTemplate } from '../models/interview'
+import type { StudySessionSummary } from '../models/study'
 import { beginSession, createSession, getSessionsByTemplate } from '../services/sessionService'
+import { getMyStudySessions, startStudy } from '../services/studyService'
 import { getTemplateById } from '../services/templateService'
 
 function formatSessionDate(value?: string) {
@@ -22,14 +24,24 @@ function formatSessionDate(value?: string) {
   }).format(parsedDate)
 }
 
+function formatInterviewStatus(status: InterviewSession['status']) {
+  if (status === 'COMPLETED') return 'COMPLETADO'
+  if (status === 'ABANDONED') return 'ABANDONADO'
+  return 'PENDIENTE'
+}
+
 function SessionPage() {
   const navigate = useNavigate()
   const { templateId } = useParams<{ templateId: string }>()
-  const [sessions, setSessions] = useState<InterviewSession[]>([])
+  const [searchParams] = useSearchParams()
+  const [interviewSessions, setInterviewSessions] = useState<InterviewSession[]>([])
+  const [studySessions, setStudySessions] = useState<StudySessionSummary[]>([])
   const [template, setTemplate] = useState<InterviewTemplate | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isCreatingInterview, setIsCreatingInterview] = useState(false)
+  const [isCreatingStudy, setIsCreatingStudy] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const didAutoStartStudyRef = useRef(false)
 
   useEffect(() => {
     if (!templateId) {
@@ -45,15 +57,17 @@ function SessionPage() {
       setErrorMessage('')
 
       try {
-        const [templatePayload, sessionPayload] = await Promise.all([
+        const [templatePayload, sessionPayload, studyPayload] = await Promise.all([
           getTemplateById(templateId),
           getSessionsByTemplate(templateId),
+          getMyStudySessions(),
         ])
 
         if (!isMounted) return
 
         setTemplate(templatePayload)
-        setSessions(sessionPayload ?? [])
+        setInterviewSessions(sessionPayload ?? [])
+        setStudySessions((studyPayload ?? []).filter((session) => session.templateId === templateId))
       } catch (error) {
         if (!isMounted) return
 
@@ -76,6 +90,17 @@ function SessionPage() {
     }
   }, [templateId])
 
+  useEffect(() => {
+    if (!templateId) return
+    if (searchParams.get('mode') !== 'study') return
+    if (didAutoStartStudyRef.current) return
+
+    didAutoStartStudyRef.current = true
+    navigate(`/sessions/${templateId}`, { replace: true })
+    void handleStartStudy()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateId, searchParams])
+
   const handleLogout = () => {
     clearAuthToken()
     navigate('/login')
@@ -90,7 +115,7 @@ function SessionPage() {
     try {
       const createdSession = await createSession({ templateId })
       const activeSession = await beginSession(createdSession.id)
-      navigate(`/session/${activeSession.id}/interview`)
+      navigate(`/sessions/${activeSession.id}/interview`, { replace: true })
     } catch (error) {
       const message =
         error instanceof Error
@@ -99,6 +124,29 @@ function SessionPage() {
       setErrorMessage(message)
     } finally {
       setIsCreatingInterview(false)
+    }
+  }
+
+  const handleStartStudy = async () => {
+    if (!templateId || isCreatingStudy) return
+
+    setIsCreatingStudy(true)
+    setErrorMessage('')
+
+    try {
+      const studySession = await startStudy({
+        templateId,
+        topic: template?.position,
+      })
+      navigate(`/sessions/${studySession.id}/study`, { replace: true })
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo iniciar la sesion de estudio. Intenta nuevamente.'
+      setErrorMessage(message)
+    } finally {
+      setIsCreatingStudy(false)
     }
   }
 
@@ -130,16 +178,29 @@ function SessionPage() {
                 </h2>
                 <button
                   type="button"
+                  onClick={handleStartStudy}
+                  disabled={!templateId || isCreatingStudy}
                   className="rounded-full bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white transition hover:opacity-80"
                 >
-                  Estudiar
+                  {isCreatingStudy ? 'Iniciando...' : 'Estudiar'}
                 </button>
               </div>
 
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                <p className="text-sm text-zinc-600">
-                  El historial de estudio no depende de esta plantilla en este modulo.
-                </p>
+                {isLoading && <p className="text-sm text-zinc-600">Cargando sesiones de estudio...</p>}
+
+                {!isLoading && !errorMessage && studySessions.length === 0 && (
+                  <p className="text-sm text-zinc-600">No hay sesiones de estudio registradas para esta plantilla.</p>
+                )}
+
+                {!isLoading && !errorMessage && studySessions.map((session) => (
+                  <SessionHistoryCard
+                    key={session.id}
+                    date={formatSessionDate(session.createdAt)}
+                    status="PENDIENTE"
+                    type="Sesion de estudio"
+                  />
+                ))}
               </div>
             </article>
 
@@ -165,15 +226,15 @@ function SessionPage() {
                   <p className="text-sm text-red-700">{errorMessage}</p>
                 )}
 
-                {!isLoading && !errorMessage && sessions.length === 0 && (
+                {!isLoading && !errorMessage && interviewSessions.length === 0 && (
                   <p className="text-sm text-zinc-600">No hay sesiones registradas para esta plantilla.</p>
                 )}
 
-                {!isLoading && !errorMessage && sessions.map((session) => (
+                {!isLoading && !errorMessage && interviewSessions.map((session) => (
                   <SessionHistoryCard
                     key={session.id}
                     date={formatSessionDate(session.startedAt ?? session.completedAt)}
-                    score={`Intento ${session.attemptNumber}`}
+                    status={formatInterviewStatus(session.status)}
                     type="Entrevista"
                   />
                 ))}
