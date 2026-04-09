@@ -1,101 +1,276 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import ExitConfirmModal from '../components/ExitConfirmModal'
 import MicrophoneButton from '../components/MicrophoneButton'
-
-type StudyQuestion = {
-  id: number
-  text: string
-}
+import { getStudySessionAnswers, saveStudySessionAnswers } from '../lib/studySessionAnswers'
+import { getStudyById } from '../services/studyService'
 
 type StudyAnswer = {
-  questionId: number
+  questionId: string
   answer: string
 }
 
-// Mock data - en producción vendría de la API
-const MOCK_TEMPLATE_NAME = 'Sesión de Estudio: React Fundamentals'
-const MOCK_QUESTIONS: StudyQuestion[] = [
-  { id: 1, text: '¿Cuál es la diferencia entre props y state en React?' },
-  { id: 2, text: '¿Qué es el Virtual DOM y por qué es importante?' },
-  { id: 3, text: '¿Cómo funcionan los hooks en React?' },
-  { id: 4, text: '¿Qué es el context API y cuándo usarlo?' },
-  { id: 5, text: '¿Cuál es el ciclo de vida de un componente de clase?' },
-]
+type StudyQuestion = {
+  id: string
+  text: string
+}
 
 function StudyPage() {
   const navigate = useNavigate()
-  const { sessionId: _sessionId } = useParams<{ sessionId: string }>()
+  const { sessionId } = useParams<{ sessionId: string }>()
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<StudyAnswer[]>([])
   const [currentResponse, setCurrentResponse] = useState('')
   const [showExitModal, setShowExitModal] = useState(false)
+  const [sessionTitle, setSessionTitle] = useState('Sesion de estudio')
+  const [questions, setQuestions] = useState<StudyQuestion[]>([])
+  const [templateId, setTemplateId] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [validationMessage, setValidationMessage] = useState('')
 
-  const currentQuestion = MOCK_QUESTIONS[currentQuestionIndex]
-  const currentAnswer = answers.find((a) => a.questionId === currentQuestion.id)
-
-  const handleMicrophoneTranscript = (text: string) => {
-    setCurrentResponse(text)
-  }
-
-  const handleSaveAnswer = () => {
-    if (!currentResponse.trim()) {
-      alert('Por favor, proporciona una respuesta')
+  useEffect(() => {
+    if (!sessionId) {
+      setErrorMessage('No se encontro la sesion de estudio.')
+      setIsLoading(false)
       return
     }
 
-    const existingAnswerIndex = answers.findIndex((a) => a.questionId === currentQuestion.id)
-    if (existingAnswerIndex >= 0) {
-      const newAnswers = [...answers]
-      newAnswers[existingAnswerIndex].answer = currentResponse
-      setAnswers(newAnswers)
-    } else {
-      setAnswers([...answers, { questionId: currentQuestion.id, answer: currentResponse }])
+    let mounted = true
+
+    const loadStudySession = async () => {
+      setIsLoading(true)
+      setErrorMessage('')
+
+      try {
+        const studySession = await getStudyById(sessionId)
+        if (!mounted) return
+
+        const sortedQuestions = [...(studySession.questions ?? [])]
+          .sort((a, b) => a.orderIndex - b.orderIndex)
+          .map((question) => ({
+            id: question.id,
+            text: question.questionText,
+          }))
+
+        setSessionTitle(studySession.topic || 'Sesion de estudio')
+        setTemplateId(studySession.templateId)
+        setQuestions(sortedQuestions)
+
+        const storedAnswers = getStudySessionAnswers(studySession.id)
+        if (storedAnswers?.answers?.length) {
+          setAnswers(storedAnswers.answers)
+        }
+      } catch (error) {
+        if (!mounted) return
+        const message =
+          error instanceof Error ? error.message : 'No se pudo cargar la sesion de estudio.'
+        setErrorMessage(message)
+      } finally {
+        if (mounted) {
+          setIsLoading(false)
+        }
+      }
     }
 
-    setCurrentResponse('')
+    void loadStudySession()
+
+    return () => {
+      mounted = false
+    }
+  }, [sessionId])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handlePopState = () => {
+      window.history.pushState(null, '', window.location.href)
+    }
+
+    window.history.pushState(null, '', window.location.href)
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!sessionId || !templateId) return
+
+    saveStudySessionAnswers({
+      sessionId,
+      templateId,
+      topic: sessionTitle,
+      answers,
+      savedAt: new Date().toISOString(),
+    })
+  }, [answers, sessionId, sessionTitle, templateId])
+
+  const currentQuestion = questions[currentQuestionIndex]
+  const currentAnswer = useMemo(
+    () => answers.find((answer) => answer.questionId === currentQuestion?.id),
+    [answers, currentQuestion?.id],
+  )
+
+  const getNextAnswers = () => {
+    if (!currentQuestion) return answers
+
+    const normalizedAnswer = currentResponse.trim()
+    if (!normalizedAnswer) return answers
+
+    const nextAnswers = [
+      ...answers.filter((answer) => answer.questionId !== currentQuestion.id),
+      {
+        questionId: currentQuestion.id,
+        answer: normalizedAnswer,
+      },
+    ]
+
+    setAnswers(nextAnswers)
+    return nextAnswers
+  }
+
+  const handleMicrophoneTranscript = (text: string) => {
+    setCurrentResponse(text)
+    setValidationMessage('')
+  }
+
+  const handleSaveAnswer = () => {
+    if (!currentQuestion) return
+
+    if (!currentResponse.trim()) {
+      setValidationMessage('Debes escribir o dictar una respuesta antes de guardar.')
+      return
+    }
+
+    getNextAnswers()
+    setValidationMessage('')
+  }
+
+  const goToQuestion = (index: number, snapshot: StudyAnswer[] = answers) => {
+    const targetQuestion = questions[index]
+    if (!targetQuestion) return
+
+    setCurrentQuestionIndex(index)
+    const existingAnswer = snapshot.find((answer) => answer.questionId === targetQuestion.id)
+    setCurrentResponse(existingAnswer?.answer ?? '')
+  }
+
+  const handleFinishStudy = () => {
+    const nextAnswers = getNextAnswers()
+    const hasAtLeastOneAnswer = nextAnswers.some((answer) => answer.answer.trim().length > 0)
+
+    if (!hasAtLeastOneAnswer) {
+      setValidationMessage('Debes responder al menos 1 pregunta antes de finalizar la sesion.')
+      return
+    }
+
+    if (!sessionId) return
+
+    if (templateId) {
+      saveStudySessionAnswers({
+        sessionId,
+        templateId,
+        topic: sessionTitle,
+        answers: nextAnswers,
+        savedAt: new Date().toISOString(),
+      })
+    }
+
+    navigate(`/sessions/${sessionId}/results`, { replace: true })
   }
 
   const handleNextQuestion = () => {
-    if (currentQuestionIndex < MOCK_QUESTIONS.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1)
-      setCurrentResponse('')
+    if (currentQuestionIndex < questions.length - 1) {
+      const snapshot = getNextAnswers()
+      setValidationMessage('')
+      goToQuestion(currentQuestionIndex + 1, snapshot)
+      return
     }
+
+    handleFinishStudy()
   }
 
   const handlePrevQuestion = () => {
+    const snapshot = getNextAnswers()
+
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1)
-      setCurrentResponse('')
+      setValidationMessage('')
+      goToQuestion(currentQuestionIndex - 1, snapshot)
     }
   }
 
   const handleSelectQuestion = (index: number) => {
-    setCurrentQuestionIndex(index)
-    setCurrentResponse('')
+    const snapshot = getNextAnswers()
+    setValidationMessage('')
+    goToQuestion(index, snapshot)
   }
 
   const handleExit = () => {
-    // Aquí se guardarían las respuestas en la BD y se marcaría como pendiente
-    navigate('/dashboard')
+    const snapshot = getNextAnswers()
+
+    if (sessionId && templateId) {
+      saveStudySessionAnswers({
+        sessionId,
+        templateId,
+        topic: sessionTitle,
+        answers: snapshot,
+        savedAt: new Date().toISOString(),
+      })
+    }
+
+    if (templateId) {
+      navigate(`/sessions/${templateId}`, { replace: true })
+      return
+    }
+
+    navigate('/dashboard', { replace: true })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-stone-100">
+        <p className="text-sm text-zinc-600">Cargando sesion de estudio...</p>
+      </div>
+    )
+  }
+
+  if (errorMessage) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-stone-100 px-4">
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {errorMessage}
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentQuestion) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-stone-100 px-4">
+        <div className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700">
+          Esta sesion no tiene preguntas disponibles.
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="h-screen w-screen bg-stone-100 flex flex-col">
+    <div className="flex h-screen w-screen flex-col bg-stone-100">
       <ExitConfirmModal
         isOpen={showExitModal}
         onConfirm={handleExit}
         onCancel={() => setShowExitModal(false)}
       />
 
-      {/* Header */}
       <header className="border-b border-zinc-300 bg-stone-50 px-6 py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-widest text-zinc-500">Sesión en curso</p>
             <h1 className="mt-1 font-serif text-2xl font-normal tracking-[-0.02em] text-zinc-900">
-              {MOCK_TEMPLATE_NAME}
+              {sessionTitle}
             </h1>
           </div>
           <button
@@ -108,37 +283,35 @@ function StudyPage() {
         </div>
       </header>
 
-      {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar - Questions list */}
-        <aside className="flex w-64 flex-col border-r border-zinc-300 bg-zinc-50 overflow-hidden">
+        <aside className="flex w-64 flex-col overflow-hidden border-r border-zinc-300 bg-zinc-50">
           <div className="border-b border-zinc-200 px-4 py-3">
             <p className="text-xs uppercase tracking-widest text-zinc-400">Preguntas</p>
             <p className="mt-1 text-xs text-zinc-500">
-              {currentQuestionIndex + 1} / {MOCK_QUESTIONS.length}
+              {currentQuestionIndex + 1} / {questions.length}
             </p>
           </div>
 
-          <ul className="flex-1 overflow-y-auto space-y-2 px-3 py-3">
-            {MOCK_QUESTIONS.map((q, idx) => {
-              const isAnswered = answers.some((a) => a.questionId === q.id)
-              const isActive = idx === currentQuestionIndex
+          <ul className="flex-1 space-y-2 overflow-y-auto px-3 py-3">
+            {questions.map((question, index) => {
+              const isAnswered = answers.some((answer) => answer.questionId === question.id)
+              const isActive = index === currentQuestionIndex
               return (
-                <li key={q.id}>
+                <li key={question.id}>
                   <button
                     type="button"
-                    onClick={() => handleSelectQuestion(idx)}
+                    onClick={() => handleSelectQuestion(index)}
                     className={`w-full rounded-lg px-3 py-2.5 text-left text-xs transition ${
                       isActive
-                        ? 'border border-[#638ea3] bg-[#638ea3]/10'
+                        ? 'border border-interviewmate-blue bg-interviewmate-blue/10'
                         : 'border border-zinc-200 bg-white hover:bg-zinc-100'
                     }`}
                   >
                     <div className="flex items-start gap-2">
-                      <span className="shrink-0 font-medium text-zinc-500">{idx + 1}.</span>
+                      <span className="shrink-0 font-medium text-zinc-500">{index + 1}.</span>
                       <div className="flex-1">
                         <p className="line-clamp-2 text-xs leading-tight text-zinc-700">
-                          {q.text}
+                          {question.text}
                         </p>
                         {isAnswered && (
                           <span className="mt-1 inline-block rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
@@ -154,29 +327,40 @@ function StudyPage() {
           </ul>
         </aside>
 
-        {/* Main area - Question and response */}
         <main className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-6">
             <div className="mx-auto max-w-2xl">
-              {/* Question */}
               <div className="mb-8 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
                 <p className="mb-2 text-xs uppercase tracking-widest text-zinc-400">
-                  Pregunta {currentQuestionIndex + 1} de {MOCK_QUESTIONS.length}
+                  Pregunta {currentQuestionIndex + 1} de {questions.length}
                 </p>
                 <h2 className="font-serif text-2xl font-normal tracking-[-0.02em] text-zinc-900">
                   {currentQuestion.text}
                 </h2>
               </div>
 
-              {/* Microphone and response area */}
               <div className="space-y-6">
-                {/* Microphone button */}
                 <div className="flex flex-col items-center gap-4">
-                  <p className="text-sm text-zinc-600">Presiona el micrófono para responder</p>
+                  <p className="text-sm text-zinc-600">Responde con voz o escribiendo en el campo</p>
                   <MicrophoneButton onTranscript={handleMicrophoneTranscript} />
                 </div>
 
-                {/* Current response or saved answer */}
+                <div className="rounded-xl border border-zinc-200 bg-stone-50 p-5">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-widest text-zinc-400">
+                    Respuesta por texto
+                  </p>
+                  <textarea
+                    value={currentResponse}
+                    onChange={(event) => {
+                      setCurrentResponse(event.target.value)
+                      setValidationMessage('')
+                    }}
+                    rows={5}
+                    placeholder="Escribe tu respuesta aqui..."
+                    className="w-full rounded-lg border border-zinc-300 bg-white p-3 text-sm text-zinc-800 outline-none transition focus:border-zinc-500"
+                  />
+                </div>
+
                 <div className="rounded-xl border border-zinc-200 bg-stone-50 p-5">
                   <p className="mb-2 text-xs font-medium uppercase tracking-widest text-zinc-400">
                     {currentResponse ? 'Respuesta (transcripción)' : 'Tu respuesta'}
@@ -185,14 +369,13 @@ function StudyPage() {
                     {currentResponse ? (
                       <p>{currentResponse}</p>
                     ) : currentAnswer ? (
-                      <p className="text-emerald-700 font-medium">{currentAnswer.answer}</p>
+                      <p className="font-medium text-emerald-700">{currentAnswer.answer}</p>
                     ) : (
                       <p className="text-zinc-400">Tu respuesta aparecerá aquí...</p>
                     )}
                   </div>
                 </div>
 
-                {/* Save answer button */}
                 {currentResponse && (
                   <button
                     type="button"
@@ -202,28 +385,32 @@ function StudyPage() {
                     Guardar respuesta
                   </button>
                 )}
+
+                {validationMessage && (
+                  <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {validationMessage}
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Navigation controls */}
           <div className="border-t border-zinc-300 bg-stone-50 px-6 py-4">
             <div className="mx-auto flex max-w-2xl gap-3">
               <button
                 type="button"
                 onClick={handlePrevQuestion}
                 disabled={currentQuestionIndex === 0}
-                className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition disabled:opacity-50 hover:bg-zinc-100"
+                className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50"
               >
                 ← Anterior
               </button>
               <button
                 type="button"
                 onClick={handleNextQuestion}
-                disabled={currentQuestionIndex === MOCK_QUESTIONS.length - 1}
-                className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition disabled:opacity-50 hover:bg-zinc-100"
+                className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50"
               >
-                Siguiente →
+                {currentQuestionIndex === questions.length - 1 ? 'Finalizar →' : 'Siguiente →'}
               </button>
             </div>
           </div>
