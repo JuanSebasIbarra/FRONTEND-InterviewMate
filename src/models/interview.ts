@@ -1,6 +1,6 @@
 export type InterviewType = 'TECHNICAL' | 'HR' | 'PSYCHOLOGICAL'
 export type InterviewStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED'
-export type SessionStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED'
+export type SessionStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED'
 export type ResultStatus = 'PASSED' | 'FAILED' | 'PENDING_REVIEW'
 
 export type InterviewTemplate = {
@@ -67,6 +67,10 @@ export type InterviewResult = {
   id: string
   sessionId: string
   attemptNumber: number
+  templateId?: string
+  enterprise?: string
+  position?: string
+  interviewType?: InterviewType
   type?: InterviewType
   generalFeedback?: string
   strengths?: string
@@ -76,4 +80,5 @@ export type InterviewResult = {
   aiModel?: string
   totalTokensUsed?: number
   generatedAt: string
+  sessionStartedAt?: string
 }
