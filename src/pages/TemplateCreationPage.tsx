@@ -135,11 +135,9 @@ function TemplateCreationPage() {
 			setStatusMessage(`Dictado aplicado en ${FIELD_LABELS[currentField] ?? 'campo'}.`)
 		}
 
-		recognition.onerror = (event) => {
+		recognition.onerror = () => {
 			setIsListening(false)
-			setErrorMessage(event.error === 'not-allowed'
-				? 'Necesitas permitir el acceso al microfono para dictar.'
-				: 'No se pudo procesar el dictado de voz.')
+			setErrorMessage('No se pudo procesar el dictado de voz. Verifica permisos del microfono.')
 			setStatusMessage('El reconocimiento de voz se detuvo.')
 		}
 
@@ -151,7 +149,7 @@ function TemplateCreationPage() {
 		recognitionRef.current = recognition
 
 		return () => {
-			recognition.abort?.()
+			recognition.stop()
 			recognitionRef.current = null
 		}
 	}, [])
