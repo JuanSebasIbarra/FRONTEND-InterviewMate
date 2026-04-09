@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage'
 import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import RegisterPage from './pages/RegisterPage'
 import SettingsPage from './pages/SettingsPage'
+import ResultsPage from './pages/ResultsPage'
 import PrivateRoute from './components/PrivateRoute'
 import PublicRoute from './components/PublicRoute'
 
@@ -90,6 +91,10 @@ export const appRouter = createBrowserRouter([
             <SettingsPage />
           </PrivateRoute>
         ),
+      },
+      {
+        path: 'results',
+        element: <ResultsPage />,
       },
       {
         path: '*',
