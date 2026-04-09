@@ -9,6 +9,7 @@ import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import RegisterPage from './pages/RegisterPage'
 import SettingsPage from './pages/SettingsPage'
 import ResultsPage from './pages/ResultsPage'
+import StudyPage from './pages/StudyPage'
 import PrivateRoute from './components/PrivateRoute'
 import PublicRoute from './components/PublicRoute'
 
@@ -95,6 +96,14 @@ export const appRouter = createBrowserRouter([
       {
         path: 'results',
         element: <ResultsPage />,
+      },
+      {
+        path: 'study/:sessionId',
+        element: (
+          <PrivateRoute>
+            <StudyPage />
+          </PrivateRoute>
+        ),
       },
       {
         path: '*',
