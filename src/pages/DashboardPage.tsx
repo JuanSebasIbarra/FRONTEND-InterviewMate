@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DashboardSidebar from '../components/dashboard/DashboardSidebar'
 import TemplateCard from '../components/dashboard/TemplateCard'
+import SessionModeModal from '../components/dashboard/SessionModeModal'
 
 const TEMPLATE_NAMES = [
   'Ingeniero de software en Google',
@@ -10,12 +12,30 @@ const TEMPLATE_NAMES = [
 
 function DashboardPage() {
   const navigate = useNavigate()
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState('')
 
   const handleLogout = () => {
     navigate('/login')
   }
 
-  const handleAdd = () => {
+  const handleAdd = (templateName: string) => {
+    setSelectedTemplate(templateName)
+    setModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setModalOpen(false)
+    setSelectedTemplate('')
+  }
+
+  const handleStudyMode = () => {
+    handleCloseModal()
+    navigate('/')
+  }
+
+  const handleInterviewMode = () => {
+    handleCloseModal()
     navigate('/')
   }
 
@@ -25,6 +45,13 @@ function DashboardPage() {
 
   return (
     <div className="h-screen w-screen bg-stone-100 flex">
+      <SessionModeModal
+        isOpen={modalOpen}
+        templateName={selectedTemplate}
+        onClose={handleCloseModal}
+        onStudy={handleStudyMode}
+        onInterview={handleInterviewMode}
+      />
       <DashboardSidebar onLogout={handleLogout} />
 
       <main className="w-full h-full sm:h-full sm:lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-6">
