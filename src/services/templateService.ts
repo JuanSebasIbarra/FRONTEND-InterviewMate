@@ -31,3 +31,9 @@ export function updateTemplateStatus(templateId: string, newStatus: 'DRAFT' | 'A
     },
   )
 }
+
+export function deleteTemplate(templateId: string) {
+  return httpRequest<void>(`/api/v1/interview-templates/${templateId}`, {
+    method: 'DELETE',
+  })
+}
