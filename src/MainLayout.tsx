@@ -9,6 +9,7 @@ function Main() {
     location.pathname.startsWith('/register') ||
     location.pathname.startsWith('/interview/live') ||
     location.pathname.startsWith('/dashboard') ||
+    location.pathname.startsWith('/history') ||
     location.pathname.startsWith('/study/live') ||
     location.pathname.startsWith('/settings') ||
     location.pathname.startsWith('/templates') ||
