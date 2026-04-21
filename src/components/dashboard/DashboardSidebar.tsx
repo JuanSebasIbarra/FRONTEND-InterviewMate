@@ -1,3 +1,4 @@
+import { Link, useLocation } from 'react-router-dom'
 import LoggedUserMenu from './LoggedUserMenu'
 import InterviewMateIcon from '../../assets/interviewmate-icon.svg'
 
@@ -6,28 +7,38 @@ type DashboardSidebarProps = {
 }
 
 function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
+  const location = useLocation()
+  const searchParams = new URLSearchParams(location.search)
+  const activeSettingsSection = searchParams.get('section') ?? 'personal'
+
   return (
     <aside className="flex min-h-105 flex-col border border-zinc-300 bg-zinc-50 px-3 py-6 w-2xs">
       <div className="flex flex-col items-center gap-2">
-        <a
-          href='/'
+        <Link
+          to="/dashboard"
           className="flex w-full px-4 py-3 text-left text-lg items-center justify-center text-zinc-700 transition hover:bg-interviewmate-blue/25"
         >
           <img src={InterviewMateIcon} alt="icon" className="w-16"/>
           InterviewMate
-        </a>
-        <a
-          href='/'
-          className="w-full border-b border-black/75 px-4 py-3 text-left text-sm rounded-t-md hover:scale-105 text-zinc-700 transition hover:bg-interviewmate-blue/25"
+        </Link>
+        <Link
+          to="/settings?section=personal"
+          className={`w-full border-b border-black/75 px-4 py-3 text-left text-sm rounded-t-md text-zinc-700 transition hover:scale-105 hover:bg-interviewmate-blue/25 ${location.pathname === '/settings' && activeSettingsSection === 'personal' ? 'bg-interviewmate-blue/15 font-medium' : ''}`}
         >
           Perfil
-        </a>
-        <a
-          href='/'
-          className="w-full border-b border-black/75 px-4 py-3 text-left text-sm rounded-t-md hover:scale-105 text-zinc-700 transition hover:bg-interviewmate-blue/25"
+        </Link>
+        <Link
+          to="/settings?section=security"
+          className={`w-full border-b border-black/75 px-4 py-3 text-left text-sm rounded-t-md text-zinc-700 transition hover:scale-105 hover:bg-interviewmate-blue/25 ${location.pathname === '/settings' && activeSettingsSection === 'security' ? 'bg-interviewmate-blue/15 font-medium' : ''}`}
         >
           Configuración
-        </a>
+        </Link>
+        <Link
+          to="/history"
+          className={`w-full border-b border-black/75 px-4 py-3 text-left text-sm rounded-t-md text-zinc-700 transition hover:scale-105 hover:bg-interviewmate-blue/25 ${location.pathname === '/history' ? 'bg-interviewmate-blue/15 font-medium' : ''}`}
+        >
+          Historial
+        </Link>
       </div>
 
       <div className="mt-auto pt-6">

@@ -5,16 +5,14 @@ import {
   loadProfileData,
   savePersonalInfo,
   saveSecurityData,
-  saveCvLocally,
   type SettingsData,
 } from '../controllers/settingsController'
 
-type Section = 'personal' | 'security' | 'documents'
+type Section = 'personal' | 'security'
 
 const SIDEBAR_ITEMS: { id: Section; label: string }[] = [
   { id: 'personal', label: 'Información personal' },
   { id: 'security', label: 'Seguridad y acceso' },
-  { id: 'documents', label: 'Documentos' },
 ]
 
 function SettingsPage() {
@@ -23,7 +21,7 @@ function SettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [activeSection, setActiveSection] = useState<Section>(() => {
     const param = searchParams.get('section')
-    return param === 'security' || param === 'documents' ? param : 'personal'
+    return param === 'security' ? param : 'personal'
   })
 
   const [loading, setLoading] = useState(true)
@@ -49,11 +47,6 @@ function SettingsPage() {
   const [securityError, setSecurityError] = useState('')
   const [securitySuccess, setSecuritySuccess] = useState('')
 
-  // — Documents
-  const [cvFileName, setCvFileName] = useState('')
-  const [cvFile, setCvFile] = useState<File | null>(null)
-  const [cvError, setCvError] = useState('')
-  const [cvSuccess, setCvSuccess] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -62,7 +55,7 @@ function SettingsPage() {
 
   useEffect(() => {
     const param = searchParams.get('section')
-    if (param === 'personal' || param === 'security' || param === 'documents') {
+    if (param === 'personal' || param === 'security') {
       setActiveSection(param)
     }
   }, [searchParams])
@@ -98,7 +91,6 @@ function SettingsPage() {
     setAvatarPreview(data.local.avatarDataUrl)
     setUsername(data.username)
     setEmail(data.email)
-    setCvFileName(data.local.cvFileName)
   }
 
   const navigateTo = (section: Section) => {
@@ -108,8 +100,6 @@ function SettingsPage() {
     setPersonalSuccess('')
     setSecurityError('')
     setSecuritySuccess('')
-    setCvError('')
-    setCvSuccess('')
   }
 
   const onAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,19 +116,6 @@ function SettingsPage() {
       setAvatarPreview(typeof reader.result === 'string' ? reader.result : '')
     }
     reader.readAsDataURL(file)
-  }
-
-  const onCvChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
-    if (!isPdf) {
-      setCvError('El CV debe estar en formato PDF.')
-      return
-    }
-    setCvError('')
-    setCvFile(file)
-    setCvFileName(file.name)
   }
 
   const onSavePersonal = async () => {
@@ -181,19 +158,6 @@ function SettingsPage() {
     } finally {
       setSavingSecurity(false)
     }
-  }
-
-  const onSaveCv = () => {
-    setCvError('')
-    setCvSuccess('')
-    if (!cvFile) {
-      setCvError('Selecciona un archivo PDF primero.')
-      return
-    }
-    const name = saveCvLocally(cvFile)
-    setCvFileName(name)
-    setCvFile(null)
-    setCvSuccess(`CV "${name}" guardado correctamente.`)
   }
 
   const onLogout = () => {
@@ -567,24 +531,6 @@ function SettingsPage() {
           object-fit: cover;
         }
 
-        .st-cv-box {
-          border: 0.5px dashed #d4d4d4;
-          border-radius: 8px;
-          padding: 14px;
-          text-align: center;
-          background: #fafaf9;
-        }
-        .st-cv-name {
-          font-size: 12px;
-          color: #111;
-          font-weight: 500;
-        }
-        .st-cv-empty {
-          font-size: 12px;
-          color: #bbb;
-          font-weight: 300;
-        }
-
         .st-btn {
           font-family: 'DM Sans', sans-serif;
           font-size: 12px;
@@ -725,7 +671,7 @@ function SettingsPage() {
                 Ajustes de perfil, <em>rápidos y claros</em>
               </div>
               <div className="st-main-sub">
-                Administra tu información personal, seguridad y documentos desde un único panel
+                Administra tu información personal y seguridad desde un único panel
               </div>
             </div>
 
@@ -878,43 +824,6 @@ function SettingsPage() {
                 </>
               )}
 
-              {activeSection === 'documents' && (
-                <>
-                  <div>
-                    <div className="st-section-title">Documentos</div>
-                    <div className="st-section-sub">
-                      Sube tu CV en formato PDF para tenerlo disponible en tu perfil.
-                    </div>
-                  </div>
-
-                  {cvError && <p className="st-alert-error">{cvError}</p>}
-                  {cvSuccess && <p className="st-alert-success">{cvSuccess}</p>}
-
-                  <div className="st-stack">
-                    <div className="st-cv-box">
-                      {cvFileName ? (
-                        <p className="st-cv-name">{cvFileName}</p>
-                      ) : (
-                        <p className="st-cv-empty">Ningún CV cargado</p>
-                      )}
-                    </div>
-
-                    <label className="st-label">
-                      Seleccionar CV (PDF)
-                      <input
-                        className="st-file"
-                        type="file"
-                        accept="application/pdf,.pdf"
-                        onChange={onCvChange}
-                      />
-                    </label>
-
-                    <button type="button" className="st-btn" onClick={onSaveCv} disabled={!cvFile}>
-                      Guardar CV
-                    </button>
-                  </div>
-                </>
-              )}
             </div>
           </main>
         </div>
