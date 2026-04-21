@@ -11,6 +11,7 @@ import SettingsPage from './pages/SettingsPage'
 import ResultsPage from './pages/ResultsPage'
 import StudyPage from './pages/StudyPage'
 import InterviewLivePage from './pages/InterviewLivePage'
+import HistoryPage from './pages/HistoryPage'
 import PrivateRoute from './components/PrivateRoute'
 import PublicRoute from './components/PublicRoute'
 
@@ -59,6 +60,14 @@ export const appRouter = createBrowserRouter([
         element: (
           <PrivateRoute>
             <DashboardPage />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: 'history',
+        element: (
+          <PrivateRoute>
+            <HistoryPage />
           </PrivateRoute>
         ),
       },
