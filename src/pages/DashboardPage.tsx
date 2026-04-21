@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import DeleteTemplateModal from '../components/DeleteTemplateModal'
 import DashboardSidebar from '../components/dashboard/DashboardSidebar'
 import SessionModeModal from '../components/dashboard/SessionModeModal'
 import TemplateCard from '../components/dashboard/TemplateCard'
 import { clearAuthToken } from '../lib/auth'
+import { formatTemplateLastActivity, sortTemplatesByRecentActivity } from '../lib/templateActivity'
 import type { InterviewTemplate } from '../models/interview'
-import { getMyTemplates } from '../services/templateService'
+import { deleteTemplate, getMyTemplates } from '../services/templateService'
 
 function DashboardPage() {
   const navigate = useNavigate()
@@ -14,6 +16,12 @@ function DashboardPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [selectedTemplate, setSelectedTemplate] = useState<InterviewTemplate | null>(null)
   const [isSessionModeModalOpen, setIsSessionModeModalOpen] = useState(false)
+  const [templatePendingDeletion, setTemplatePendingDeletion] = useState<InterviewTemplate | null>(null)
+  const [isDeletingTemplate, setIsDeletingTemplate] = useState(false)
+
+  const sortedTemplates = useMemo(() => sortTemplatesByRecentActivity(templates), [templates])
+  const recentTemplates = useMemo(() => sortedTemplates.slice(0, 3), [sortedTemplates])
+  const hasTemplateHistory = sortedTemplates.length > 3
 
   useEffect(() => {
     let isMounted = true
@@ -79,6 +87,37 @@ function DashboardPage() {
     navigate(`/sessions/${templateId}`)
   }
 
+  const handleOpenHistory = () => {
+    navigate('/history')
+  }
+
+  const handleRequestDeleteTemplate = (template: InterviewTemplate) => {
+    setTemplatePendingDeletion(template)
+  }
+
+  const handleCancelDeleteTemplate = () => {
+    if (isDeletingTemplate) return
+    setTemplatePendingDeletion(null)
+  }
+
+  const handleConfirmDeleteTemplate = async () => {
+    if (!templatePendingDeletion) return
+
+    setIsDeletingTemplate(true)
+    setErrorMessage('')
+
+    try {
+      await deleteTemplate(templatePendingDeletion.id)
+      setTemplates((currentTemplates) => currentTemplates.filter((template) => template.id !== templatePendingDeletion.id))
+      setTemplatePendingDeletion(null)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo eliminar la plantilla.'
+      setErrorMessage(message)
+    } finally {
+      setIsDeletingTemplate(false)
+    }
+  }
+
   return (
     <div className="h-screen w-screen bg-stone-100 flex">
       <DashboardSidebar onLogout={handleLogout} />
@@ -94,9 +133,14 @@ function DashboardPage() {
 
           <article>
             <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 className="font-serif text-[2rem] font-normal tracking-[-0.02em] text-zinc-900">
-                Plantillas
-              </h2>
+              <div>
+                <h2 className="font-serif text-[2rem] font-normal tracking-[-0.02em] text-zinc-900">
+                  Plantillas recientes
+                </h2>
+                <p className="mt-1 text-sm text-zinc-500">
+                  Mostrando las tres plantillas con actividad mas reciente.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={handleAdd}
@@ -115,20 +159,43 @@ function DashboardPage() {
                 <p className="text-sm text-red-700">{errorMessage}</p>
               )}
 
-              {!isLoading && !errorMessage && templates.length === 0 && (
+              {!isLoading && !errorMessage && recentTemplates.length === 0 && (
                 <p className="text-sm text-zinc-600">Aun no tienes plantillas creadas.</p>
               )}
 
-              {!isLoading && !errorMessage && templates.map((template) => (
+              {!isLoading && !errorMessage && recentTemplates.map((template) => (
                 <TemplateCard
                   key={template.id}
                   name={`${template.position} - ${template.enterprise}`}
+                  subtitle={`Ultima actividad: ${formatTemplateLastActivity(template)}`}
                   onAdd={() => handleOpenSessionModeModal(template)}
                   onHistory={() => handleOpenTemplate(template.id)}
                   onOpen={() => handleOpenTemplate(template.id)}
+                  secondaryActionLabel="Abrir"
+                  onDelete={() => handleRequestDeleteTemplate(template)}
                 />
               ))}
             </div>
+
+            {!isLoading && !errorMessage && hasTemplateHistory && (
+              <div className="mt-6 rounded-2xl border border-zinc-300 bg-white px-5 py-4 shadow-sm">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-widest text-zinc-400">History</p>
+                    <p className="mt-1 text-sm text-zinc-600">
+                      Tienes {sortedTemplates.length - recentTemplates.length} plantilla{sortedTemplates.length - recentTemplates.length === 1 ? '' : 's'} adicional{sortedTemplates.length - recentTemplates.length === 1 ? '' : 'es'} en tu historial.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenHistory}
+                    className="w-full rounded-full border border-zinc-300 bg-white px-5 py-2.5 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100 md:w-auto"
+                  >
+                    Ver historial
+                  </button>
+                </div>
+              </div>
+            )}
           </article>
         </section>
       </main>
@@ -139,6 +206,14 @@ function DashboardPage() {
         onClose={handleCloseSessionModeModal}
         onStudy={handleStartStudy}
         onInterview={handleStartInterview}
+      />
+
+      <DeleteTemplateModal
+        isOpen={Boolean(templatePendingDeletion)}
+        templateName={templatePendingDeletion ? `${templatePendingDeletion.position} - ${templatePendingDeletion.enterprise}` : 'Plantilla'}
+        isDeleting={isDeletingTemplate}
+        onCancel={handleCancelDeleteTemplate}
+        onConfirm={() => void handleConfirmDeleteTemplate()}
       />
     </div>
   )
