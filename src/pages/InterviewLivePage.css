@@ -1,0 +1,428 @@
+.teams-call-container {
+  --teams-bg: #1a1a2e;
+  --teams-panel: #1f1f3a;
+  --teams-panel-2: #15192c;
+  --teams-border: #33384b;
+  --teams-text: #f4f6fb;
+  --teams-muted: #a8afc3;
+  --teams-accent: #e07b39;
+  --teams-hangup: #c42b1c;
+
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(224, 123, 57, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(120, 170, 255, 0.1), transparent 24%),
+    var(--teams-bg);
+  color: var(--teams-text);
+}
+
+.teams-top-bar {
+  height: 64px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  border-bottom: 1px solid var(--teams-border);
+  background: rgba(31, 31, 58, 0.92);
+  backdrop-filter: blur(8px);
+}
+
+.teams-top-left {
+  min-width: 0;
+}
+
+.teams-meeting-title {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.teams-meeting-meta {
+  color: var(--teams-muted);
+  font-size: 0.85rem;
+}
+
+.teams-content-area {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 14px;
+  padding: 14px;
+}
+
+.teams-main-stage {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #0d1117;
+}
+
+.teams-loading-stage {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--teams-muted);
+}
+
+.avatar-stage-frame {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(96, 120, 170, 0.15), transparent 40%),
+    #0b1020;
+}
+
+.avatar-loading {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(10, 16, 31, 0.72);
+  color: #d9dff2;
+  font-size: 0.82rem;
+}
+
+.avatar-stage-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.65), transparent);
+  pointer-events: none;
+}
+
+.avatar-label-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.84rem;
+}
+
+.avatar-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #7c859e;
+}
+
+.avatar-status-dot-active {
+  background: #f0a766;
+  box-shadow: 0 0 10px rgba(240, 167, 102, 0.85);
+}
+
+.avatar-state-badge {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #c5ccdf;
+}
+
+.pip-self {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 180px;
+  height: 120px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: #0a0a1a;
+  z-index: 6;
+}
+
+.pip-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  color: #dbe1f5;
+  background:
+    linear-gradient(140deg, rgba(93, 126, 188, 0.3), rgba(14, 16, 33, 0.95));
+}
+
+.pip-profile-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pip-placeholder small {
+  font-size: 0.72rem;
+  color: #bac2d8;
+}
+
+.participant-label {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  background: rgba(0, 0, 0, 0.62);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  z-index: 5;
+}
+
+.teams-side-panel {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: 10px;
+}
+
+.teams-card {
+  border: 1px solid var(--teams-border);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(34, 38, 61, 0.95), rgba(22, 26, 45, 0.95));
+  padding: 12px;
+}
+
+.teams-card-scroll {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.teams-card-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--teams-muted);
+}
+
+.teams-question-text {
+  margin: 6px 0 0;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.teams-muted-text {
+  margin: 8px 0 0;
+  color: var(--teams-muted);
+  font-size: 0.9rem;
+}
+
+.teams-transcript-list {
+  margin-top: 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.teams-transcript-item {
+  margin: 0;
+  border-radius: 8px;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(8, 11, 22, 0.55);
+  color: #e6eaf8;
+  font-size: 0.92rem;
+}
+
+.teams-answer-input {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #0d1222;
+  color: var(--teams-text);
+  outline: none;
+  resize: vertical;
+  min-height: 92px;
+  padding: 10px;
+  font-size: 0.92rem;
+}
+
+.teams-answer-input:focus {
+  border-color: rgba(224, 123, 57, 0.75);
+  box-shadow: 0 0 0 2px rgba(224, 123, 57, 0.2);
+}
+
+.teams-alert {
+  margin: 0;
+  border-radius: 8px;
+  padding: 9px 10px;
+  border: 1px solid;
+  font-size: 0.86rem;
+}
+
+.teams-alert-error {
+  background: rgba(129, 32, 32, 0.28);
+  border-color: rgba(241, 109, 109, 0.6);
+  color: #ffc3c3;
+}
+
+.teams-alert-warning {
+  background: rgba(125, 98, 21, 0.28);
+  border-color: rgba(255, 205, 78, 0.55);
+  color: #ffebb2;
+}
+
+.teams-bottom-bar {
+  height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 0 16px;
+  border-top: 1px solid var(--teams-border);
+  background: rgba(31, 31, 58, 0.94);
+}
+
+.teams-bottom-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.teams-action-btn {
+  border: 1px solid #495067;
+  background: #2a2f44;
+  color: var(--teams-text);
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  transition: 0.18s ease;
+}
+
+.teams-action-btn:hover:not(:disabled) {
+  border-color: #69728f;
+  transform: translateY(-1px);
+}
+
+.teams-action-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.teams-action-btn-primary {
+  border-color: rgba(224, 123, 57, 0.7);
+  background: rgba(224, 123, 57, 0.2);
+}
+
+.teams-action-btn-accent {
+  border-color: rgba(224, 123, 57, 0.9);
+  background: rgba(224, 123, 57, 0.3);
+}
+
+.teams-action-btn-visual {
+  opacity: 0.85;
+}
+
+.teams-hangup-btn {
+  border: 1px solid rgba(196, 43, 28, 0.65);
+  background: var(--teams-hangup);
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+}
+
+.teams-hangup-btn:hover {
+  filter: brightness(1.06);
+}
+
+.teams-exit-modal {
+  width: min(520px, 95vw);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: #181d31;
+  box-shadow: 0 22px 64px rgba(0, 0, 0, 0.45);
+  padding: 16px;
+}
+
+.teams-exit-title {
+  margin: 8px 0 0;
+  font-size: 1.45rem;
+}
+
+.teams-exit-text {
+  margin: 8px 0 0;
+  color: #c3cae0;
+  line-height: 1.45;
+}
+
+.teams-exit-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1100px) {
+  .teams-content-area {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .teams-side-panel {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .teams-card-scroll {
+    min-height: 180px;
+  }
+}
+
+@media (max-width: 760px) {
+  .teams-top-bar {
+    height: auto;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .teams-content-area {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .teams-side-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .teams-bottom-bar {
+    height: auto;
+    padding: 10px 12px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .teams-bottom-actions {
+    width: 100%;
+  }
+
+  .pip-self {
+    top: 12px;
+    right: 12px;
+    bottom: auto;
+    width: 90px;
+    height: 60px;
+  }
+
+  .participant-label {
+    bottom: 10px;
+    left: 10px;
+    font-size: 12px;
+  }
+}

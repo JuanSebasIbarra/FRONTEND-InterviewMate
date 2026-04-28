@@ -19,7 +19,7 @@ export type SettingsData = {
   local: LocalSettingsAssets
 }
 
-function readLocalSettings(): LocalSettingsAssets {
+export function readLocalSettings(): LocalSettingsAssets {
   const fallback: LocalSettingsAssets = {
     firstName: '',
     lastName: '',

@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import AvatarScene from '../components/avatar/AvatarScene'
+import type { AvatarState } from '../components/AvatarGLB'
+import { readLocalSettings } from '../controllers/settingsController'
 import {
   finishInterviewSession,
   loadInterviewSessionData,
   submitQuestionAnswer,
 } from '../controllers/interviewSessionController'
 import type { InterviewQuestion, InterviewSession } from '../models/interview'
+import './InterviewLivePage.css'
 
 type TranscriptEntry = {
   id: number
@@ -55,28 +59,6 @@ const FALLBACK_QUESTIONS = [
   'Como reaccionas cuando recibes feedback duro sobre tu trabajo?',
 ]
 
-function InterviewerAvatar() {
-  return (
-    <div className="mx-auto flex h-40 w-40 items-center justify-center rounded-full border border-zinc-700 bg-stone-50">
-      <svg
-        viewBox="0 0 180 180"
-        aria-hidden="true"
-        className="h-32 w-32 text-zinc-800"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="90" cy="52" r="24" />
-        <path d="M53 128c3-26 18-44 37-44s34 18 37 44" />
-        <path d="M90 90 72 108l18 18 18-18-18-18Z" />
-        <path d="M90 126v20" />
-      </svg>
-    </div>
-  )
-}
-
 function InterviewLivePage() {
   const navigate = useNavigate()
   const { sessionId } = useParams<{ sessionId: string }>()
@@ -96,6 +78,10 @@ function InterviewLivePage() {
   const [isExitModalOpen, setIsExitModalOpen] = useState(false)
   const [exitMode, setExitMode] = useState<ExitMode>('cancel')
   const [errorMessage, setErrorMessage] = useState('')
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [isQuestionIntroActive, setIsQuestionIntroActive] = useState(true)
+  const [userAvatarUrl, setUserAvatarUrl] = useState('')
+  const [userDisplayName, setUserDisplayName] = useState('Candidato')
 
   const speechRecognitionSupported = Boolean(
     window.SpeechRecognition || window.webkitSpeechRecognition,
@@ -164,6 +150,39 @@ function InterviewLivePage() {
   }, [])
 
   useEffect(() => {
+    const localSettings = readLocalSettings()
+    setUserAvatarUrl(localSettings.avatarDataUrl)
+
+    const displayName = [localSettings.firstName, localSettings.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim()
+
+    setUserDisplayName(displayName || 'Candidato')
+  }, [])
+
+  useEffect(() => {
+    if (!session?.startedAt) {
+      setElapsedSeconds(0)
+      return
+    }
+
+    const startTime = new Date(session.startedAt).getTime()
+
+    const tick = () => {
+      const diff = Math.max(0, Math.floor((Date.now() - startTime) / 1000))
+      setElapsedSeconds(diff)
+    }
+
+    tick()
+    const interval = window.setInterval(tick, 1000)
+
+    return () => {
+      window.clearInterval(interval)
+    }
+  }, [session?.startedAt])
+
+  useEffect(() => {
     if (typeof window === 'undefined') return
 
     const handlePopState = () => {
@@ -195,6 +214,36 @@ function InterviewLivePage() {
       currentTypedAnswer.trim().length > 0,
     [currentEntries, currentTypedAnswer],
   )
+
+  useEffect(() => {
+    setIsQuestionIntroActive(true)
+    const timeout = window.setTimeout(() => {
+      setIsQuestionIntroActive(false)
+    }, 2800)
+
+    return () => {
+      window.clearTimeout(timeout)
+    }
+  }, [questionKey])
+
+  const avatarState: AvatarState = useMemo(() => {
+    if (isSavingAnswer || isFinishingSession) return 'thinking'
+    if (isRecording) return 'listening'
+    if (isQuestionIntroActive) return 'talking'
+    return 'idle'
+  }, [isFinishingSession, isQuestionIntroActive, isRecording, isSavingAnswer])
+
+  const callDurationLabel = useMemo(() => {
+    const hours = Math.floor(elapsedSeconds / 3600)
+    const minutes = Math.floor((elapsedSeconds % 3600) / 60)
+    const seconds = elapsedSeconds % 60
+
+    const hh = String(hours).padStart(2, '0')
+    const mm = String(minutes).padStart(2, '0')
+    const ss = String(seconds).padStart(2, '0')
+
+    return `${hh}:${mm}:${ss}`
+  }, [elapsedSeconds])
 
   const stopRecording = () => {
     recognitionRef.current?.stop()
@@ -393,142 +442,152 @@ function InterviewLivePage() {
     : 'Siguiente'
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-stone-100 px-2 py-3 sm:px-4 sm:py-4">
-      <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-md border border-zinc-300 bg-stone-50 px-3 py-4 shadow-sm sm:px-5 sm:py-5">
-        <div className="mb-6 flex items-center justify-between gap-3">
+    <div className="teams-call-container">
+      <header className="teams-top-bar">
+        <div className="teams-top-left">
+          <div className="teams-meeting-title">InterviewMate - Entrevista en progreso</div>
+          <div className="teams-meeting-meta">Duracion {callDurationLabel}</div>
+        </div>
+      </header>
+
+      <div className="teams-content-area">
+        <section className="teams-main-stage">
+          {isLoading ? (
+            <div className="teams-loading-stage">
+              <p>Cargando entrevista...</p>
+            </div>
+          ) : (
+            <AvatarScene
+              avatarState={avatarState}
+              interviewerName="Entrevistador IA"
+              modelUrl="/models/avatar_1776746364480.glb"
+            />
+          )}
+
+          <div className="participant-label">Entrevistador IA</div>
+
+          <div className="pip-self">
+            {userAvatarUrl ? (
+              <img src={userAvatarUrl} alt={userDisplayName} className="pip-profile-photo" />
+            ) : (
+              <div className="pip-placeholder">
+                <span>{userDisplayName.charAt(0).toUpperCase()}</span>
+                <small>{userDisplayName}</small>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <aside className="teams-side-panel">
+          <section className="teams-card">
+            <p className="teams-card-kicker">Pregunta actual</p>
+            <p className="teams-question-text">{currentQuestionText}</p>
+          </section>
+
+          <section className="teams-card teams-card-scroll">
+            <p className="teams-card-kicker">Transcripcion</p>
+            {!hasAnyAnswerInCurrentQuestion && !isRecording && (
+              <p className="teams-muted-text">
+                Presiona Silenciar para iniciar la transcripcion de tu respuesta.
+              </p>
+            )}
+
+            <div className="teams-transcript-list">
+              {currentEntries.map((entry) => (
+                <p key={entry.id} className="teams-transcript-item">
+                  {entry.text || 'Escuchando...'}
+                </p>
+              ))}
+            </div>
+          </section>
+
+          <section className="teams-card">
+            <p className="teams-card-kicker">Respuesta por texto</p>
+            <textarea
+              value={currentTypedAnswer}
+              onChange={(event) => {
+                const value = event.target.value
+                setTypedAnswersByQuestion((prev) => ({
+                  ...prev,
+                  [questionKey]: value,
+                }))
+              }}
+              rows={4}
+              placeholder="Tambien puedes responder escribiendo aqui..."
+              className="teams-answer-input"
+            />
+          </section>
+
+          {errorMessage && (
+            <p className="teams-alert teams-alert-error">{errorMessage}</p>
+          )}
+
+          {!speechRecognitionSupported && (
+            <p className="teams-alert teams-alert-warning">
+              Tu navegador no soporta transcripcion automatica. Intenta en Chrome o Edge.
+            </p>
+          )}
+        </aside>
+      </div>
+
+      <footer className="teams-bottom-bar">
+        <div className="teams-bottom-actions">
           <button
             type="button"
-            onClick={() => openExitModal('stop')}
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100"
+            onClick={toggleRecording}
+            disabled={!speechRecognitionSupported || isLoading || isSavingAnswer || isFinishingSession}
+            className={`teams-action-btn ${isRecording ? 'teams-action-btn-accent' : ''}`}
           >
-            Detener entrevista
+            {isRecording ? 'Detener respuesta' : 'Responder'}
+          </button>
+          <button
+            type="button"
+            onClick={goToNextQuestion}
+            disabled={isLoading || isSavingAnswer || isFinishingSession}
+            className="teams-action-btn teams-action-btn-primary"
+          >
+            {isSavingAnswer || isFinishingSession ? 'Guardando...' : nextButtonLabel}
           </button>
         </div>
 
-        {isLoading ? (
-          <div className="flex min-h-0 flex-1 items-center justify-center rounded-md border border-dashed border-zinc-300 bg-white">
-            <p className="text-sm text-zinc-600">Cargando entrevista...</p>
-          </div>
-        ) : (
-          <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-5 overflow-hidden py-1">
-            <InterviewerAvatar />
-
-            <div className="rounded-md border border-zinc-300 bg-white px-4 py-5 sm:px-5">
-              <p className="text-center font-serif text-2xl tracking-[-0.02em] text-zinc-900 sm:text-3xl">
-                {currentQuestionText}
-              </p>
-            </div>
-
-            <div className="flex min-h-0 flex-1 flex-col rounded-md border border-zinc-300 bg-white px-3 py-4 sm:px-4">
-              <p className="mb-3 text-xs uppercase tracking-widest text-zinc-500">
-                Tu transcripcion
-              </p>
-
-              {!hasAnyAnswerInCurrentQuestion && !isRecording && (
-                <p className="text-sm text-zinc-500">
-                  Presiona Responder y comienza a hablar para registrar tu respuesta.
-                </p>
-              )}
-
-              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
-                {currentEntries.map((entry) => (
-                  <p
-                    key={entry.id}
-                    className="rounded-md border border-zinc-200 bg-stone-50 px-3 py-3 text-sm leading-relaxed text-zinc-800"
-                  >
-                    {entry.text || 'Escuchando...'}
-                  </p>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-md border border-zinc-300 bg-white px-3 py-4 sm:px-4">
-              <p className="mb-2 text-xs uppercase tracking-widest text-zinc-500">
-                Respuesta por texto
-              </p>
-              <textarea
-                value={currentTypedAnswer}
-                onChange={(event) => {
-                  const value = event.target.value
-                  setTypedAnswersByQuestion((prev) => ({
-                    ...prev,
-                    [questionKey]: value,
-                  }))
-                }}
-                rows={4}
-                placeholder="Tambien puedes responder escribiendo aqui..."
-                className="w-full rounded-md border border-zinc-300 bg-stone-50 px-3 py-2 text-sm text-zinc-800 outline-none transition focus:border-zinc-500"
-              />
-            </div>
-
-            {errorMessage && (
-              <p className="rounded-md border border-red-200 bg-red-50 px-3 py-3 text-sm text-red-700">
-                {errorMessage}
-              </p>
-            )}
-
-            {!speechRecognitionSupported && (
-              <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-700">
-                Tu navegador no soporta transcripcion automatica. Intenta en Chrome o Edge.
-              </p>
-            )}
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={toggleRecording}
-                disabled={!speechRecognitionSupported || isLoading || isSavingAnswer || isFinishingSession}
-                className={`rounded-md border px-5 py-2.5 text-base font-medium transition ${
-                  isRecording
-                    ? 'border-red-700 bg-red-600 text-white hover:bg-red-700'
-                    : 'border-zinc-800 bg-white text-zinc-900 hover:bg-zinc-100'
-                } disabled:cursor-not-allowed disabled:opacity-50`}
-              >
-                {isRecording ? 'Detener transcripcion' : 'Responder'}
-              </button>
-
-              <button
-                type="button"
-                onClick={goToNextQuestion}
-                disabled={isLoading || isSavingAnswer || isFinishingSession}
-                className="rounded-md border border-zinc-300 bg-white px-5 py-2.5 text-base font-medium text-zinc-900 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isSavingAnswer || isFinishingSession ? 'Guardando...' : nextButtonLabel}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+        <button
+          type="button"
+          onClick={() => openExitModal('stop')}
+          className="teams-hangup-btn"
+        >
+          Finalizar
+        </button>
+      </footer>
 
       {isExitModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4"
           onClick={closeExitModal}
         >
           <div
-            className="w-full max-w-lg rounded-md border border-zinc-200 bg-white p-5 shadow-xl"
+            className="teams-exit-modal"
             onClick={(event) => event.stopPropagation()}
           >
-            <p className="text-xs uppercase tracking-widest text-zinc-500">Confirmar salida</p>
-            <h2 className="mt-2 font-serif text-3xl tracking-[-0.02em] text-zinc-900">
+            <p className="teams-card-kicker">Confirmar salida</p>
+            <h2 className="teams-exit-title">
               {exitMode === 'stop' ? 'Detener entrevista' : 'Salir de entrevista'}
             </h2>
-            <p className="mt-3 text-sm text-zinc-700">
+            <p className="teams-exit-text">
               Si sales ahora se cancelara la entrevista y no habra feedback generado.
             </p>
 
-            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="teams-exit-actions">
               <button
                 type="button"
                 onClick={closeExitModal}
-                className="rounded-md border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
+                className="teams-action-btn teams-action-btn-visual"
               >
                 Continuar entrevista
               </button>
               <button
                 type="button"
                 onClick={confirmExitInterview}
-                className="rounded-md bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-85"
+                className="teams-hangup-btn"
               >
                 Confirmar salida
               </button>
