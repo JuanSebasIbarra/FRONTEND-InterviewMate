@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import ExitConfirmModal from '../components/ExitConfirmModal'
 import MicrophoneButton from '../components/MicrophoneButton'
+import { markStudyModuleCompleted, saveStudyModuleToHistory } from '../lib/studyModulesHistory'
 import { getStudySessionAnswers, saveStudySessionAnswers } from '../lib/studySessionAnswers'
 import { getStudyById } from '../services/studyService'
 
@@ -57,6 +58,7 @@ function StudyPage() {
         setSessionTitle(studySession.topic || 'Sesion de estudio')
         setTemplateId(studySession.templateId)
         setQuestions(sortedQuestions)
+        saveStudyModuleToHistory(studySession)
 
         const storedAnswers = getStudySessionAnswers(studySession.id)
         if (storedAnswers?.answers?.length) {
@@ -160,10 +162,15 @@ function StudyPage() {
 
   const handleFinishStudy = () => {
     const nextAnswers = getNextAnswers()
-    const hasAtLeastOneAnswer = nextAnswers.some((answer) => answer.answer.trim().length > 0)
+    const answeredQuestionIds = new Set(
+      nextAnswers
+        .filter((answer) => answer.answer.trim().length > 0)
+        .map((answer) => answer.questionId),
+    )
+    const allQuestionsAnswered = questions.every((question) => answeredQuestionIds.has(question.id))
 
-    if (!hasAtLeastOneAnswer) {
-      setValidationMessage('Debes responder al menos 1 pregunta antes de finalizar la sesion.')
+    if (!allQuestionsAnswered) {
+      setValidationMessage('Debes responder todas las preguntas antes de finalizar la sesion.')
       return
     }
 
@@ -178,6 +185,8 @@ function StudyPage() {
         savedAt: new Date().toISOString(),
       })
     }
+
+    markStudyModuleCompleted(sessionId)
 
     navigate(`/sessions/${sessionId}/results`, { replace: true })
   }

@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import LoggedUserMenu from '../components/dashboard/LoggedUserMenu'
 import { clearAuthToken } from '../lib/auth'
 import {
   loadProfileData,
@@ -17,7 +18,6 @@ const SIDEBAR_ITEMS: { id: Section; label: string }[] = [
 
 function SettingsPage() {
   const navigate = useNavigate()
-  const menuRef = useRef<HTMLDivElement>(null)
   const [searchParams, setSearchParams] = useSearchParams()
   const [activeSection, setActiveSection] = useState<Section>(() => {
     const param = searchParams.get('section')
@@ -47,8 +47,6 @@ function SettingsPage() {
   const [securityError, setSecurityError] = useState('')
   const [securitySuccess, setSecuritySuccess] = useState('')
 
-  const [menuOpen, setMenuOpen] = useState(false)
-
   useEffect(() => {
     void hydrate()
   }, [])
@@ -59,16 +57,6 @@ function SettingsPage() {
       setActiveSection(param)
     }
   }, [searchParams])
-
-  useEffect(() => {
-    const handleOutsideClick = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false)
-      }
-    }
-    document.addEventListener('click', handleOutsideClick)
-    return () => document.removeEventListener('click', handleOutsideClick)
-  }, [])
 
   const hydrate = async () => {
     setLoading(true)
@@ -162,7 +150,6 @@ function SettingsPage() {
 
   const onLogout = () => {
     clearAuthToken()
-    setMenuOpen(false)
     navigate('/login', { replace: true })
   }
 
@@ -322,18 +309,22 @@ function SettingsPage() {
 
         .st-body {
           display: grid;
-          grid-template-columns: 284px 1fr;
+          grid-template-columns: 320px 1fr;
           min-height: 0;
         }
 
         .st-sidebar {
           background: #fff;
           border-right: 0.5px solid #e5e5e5;
-          padding: 1.5rem;
+          padding: 1.5rem 0.75rem;
           display: flex;
           flex-direction: column;
           gap: 1rem;
           overflow-y: auto;
+        }
+        .st-sidebar-footer {
+          margin-top: auto;
+          padding-top: 0.5rem;
         }
         .st-sidebar-label {
           font-size: 10px;
@@ -570,57 +561,6 @@ function SettingsPage() {
             <button type="button" className="st-back" onClick={() => navigate('/dashboard')}>
               ← Dashboard
             </button>
-            <div className="st-menu" ref={menuRef}>
-              <button
-                type="button"
-                className="st-avatar st-avatar-btn"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  setMenuOpen((value) => !value)
-                }}
-                aria-label="Abrir menú"
-                aria-expanded={menuOpen}
-                aria-haspopup="true"
-              >
-                {avatarInitial}
-              </button>
-
-              {menuOpen && (
-                <div className="st-menu-dropdown" role="menu">
-                  <button
-                    type="button"
-                    className="st-menu-item"
-                    role="menuitem"
-                    onClick={() => {
-                      setMenuOpen(false)
-                      navigate('/dashboard')
-                    }}
-                  >
-                    Dashboard
-                  </button>
-                  <button
-                    type="button"
-                    className="st-menu-item"
-                    role="menuitem"
-                    onClick={() => {
-                      setMenuOpen(false)
-                      navigate('/settings')
-                    }}
-                  >
-                    Editar perfil
-                  </button>
-                  <hr className="st-menu-divider" />
-                  <button
-                    type="button"
-                    className="st-menu-item st-menu-item-danger"
-                    role="menuitem"
-                    onClick={onLogout}
-                  >
-                    Cerrar sesión
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
@@ -663,6 +603,10 @@ function SettingsPage() {
             </div>
 
             {globalError && <p className="st-alert-error">{globalError}</p>}
+
+            <div className="st-sidebar-footer">
+              <LoggedUserMenu username={displayName} onLogout={onLogout} />
+            </div>
           </aside>
 
           <main className="st-main">
