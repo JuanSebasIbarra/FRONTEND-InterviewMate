@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { Environment, Html } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { AvatarGLB, type AvatarState } from '../AvatarGLB'
+import avatarBg from '../../assets/avatar-background.png'
 
 type AvatarSceneProps = {
   avatarState?: AvatarState
@@ -15,7 +16,14 @@ export function AvatarScene({
   modelUrl = '/models/avatar_1776746364480.glb',
 }: AvatarSceneProps) {
   return (
-    <div className="avatar-stage-frame">
+    <div
+      className="avatar-stage-frame"
+      style={{
+        backgroundImage: `url(${avatarBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
       <Canvas
         camera={{ position: [0, 1.6, 2.2], fov: 40, near: 0.1, far: 100 }}
         shadows
@@ -25,9 +33,10 @@ export function AvatarScene({
           camera.lookAt(0, 1.4, 0)
         }}
       >
-        <ambientLight intensity={0.6} />
+        <ambientLight intensity={0.8} />
         <directionalLight position={[5, 5, 5]} intensity={1.2} castShadow />
         <pointLight position={[0, 1.8, 1.6]} intensity={0.8} color="#f7dcc7" />
+        <pointLight position={[0, 2.1, -1.8]} intensity={0.52} color="#87a5d6" />
 
         <Suspense
           fallback={(
@@ -36,11 +45,7 @@ export function AvatarScene({
             </Html>
           )}
         >
-          <Environment preset="city" />
-          <mesh position={[0, 1.4, -2.2]} receiveShadow>
-            <planeGeometry args={[8, 5]} />
-            <meshStandardMaterial color="#1a2238" roughness={0.95} metalness={0.05} />
-          </mesh>
+          <Environment preset="studio" />
 
           <AvatarGLB
             url={modelUrl}
