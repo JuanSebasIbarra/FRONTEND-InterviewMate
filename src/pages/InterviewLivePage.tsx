@@ -59,10 +59,64 @@ const FALLBACK_QUESTIONS = [
   'Como reaccionas cuando recibes feedback duro sobre tu trabajo?',
 ]
 
+function MicrophoneIcon({ muted = false }: { muted?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z" />
+      <path d="M19 11a7 7 0 0 1-12.3 4.6" />
+      <path d="M5 11a7 7 0 0 0 11.6 5.3" />
+      <path d="M12 18v3" />
+      <path d="M9 21h6" />
+      {muted ? <path d="M4 4l16 16" /> : null}
+    </svg>
+  )
+}
+
+function CameraIcon({ off = false }: { off?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M15 10.5 20 7v10l-5-3.5" />
+      <rect x="3" y="6" width="12" height="12" rx="2" />
+      {off ? <path d="M4 4l16 16" /> : null}
+    </svg>
+  )
+}
+
+function NextIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 12h12" />
+      <path d="m13 6 6 6-6 6" />
+    </svg>
+  )
+}
+
+function TranscriptIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 5h16" />
+      <path d="M4 10h16" />
+      <path d="M4 15h10" />
+      <path d="M4 20h8" />
+    </svg>
+  )
+}
+
+function HangupIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 15c4.5-4 11.5-4 16 0" />
+      <path d="M6.5 14.5 5 20" />
+      <path d="M17.5 14.5 19 20" />
+    </svg>
+  )
+}
+
 function InterviewLivePage() {
   const navigate = useNavigate()
   const { sessionId } = useParams<{ sessionId: string }>()
   const recognitionRef = useRef<SpeechRecognitionInstanceLike | null>(null)
+  const answerInputRef = useRef<HTMLTextAreaElement | null>(null)
 
   const [session, setSession] = useState<InterviewSession | null>(null)
   const [questions, setQuestions] = useState<InterviewQuestion[]>([])
@@ -82,6 +136,7 @@ function InterviewLivePage() {
   const [isQuestionIntroActive, setIsQuestionIntroActive] = useState(true)
   const [userAvatarUrl, setUserAvatarUrl] = useState('')
   const [userDisplayName, setUserDisplayName] = useState('Candidato')
+  const [isSelfViewVisible, setIsSelfViewVisible] = useState(true)
 
   const speechRecognitionSupported = Boolean(
     window.SpeechRecognition || window.webkitSpeechRecognition,
@@ -419,6 +474,10 @@ function InterviewLivePage() {
     setIsExitModalOpen(true)
   }
 
+  const focusAnswerInput = () => {
+    answerInputRef.current?.focus()
+  }
+
   const closeExitModal = () => {
     setIsExitModalOpen(false)
   }
@@ -466,7 +525,7 @@ function InterviewLivePage() {
 
           <div className="participant-label">Entrevistador IA</div>
 
-          <div className="pip-self">
+          <div className={`pip-self ${isSelfViewVisible ? '' : 'pip-self-hidden'}`}>
             {userAvatarUrl ? (
               <img src={userAvatarUrl} alt={userDisplayName} className="pip-profile-photo" />
             ) : (
@@ -504,6 +563,7 @@ function InterviewLivePage() {
           <section className="teams-card">
             <p className="teams-card-kicker">Respuesta por texto</p>
             <textarea
+              ref={answerInputRef}
               value={currentTypedAnswer}
               onChange={(event) => {
                 const value = event.target.value
@@ -531,31 +591,86 @@ function InterviewLivePage() {
       </div>
 
       <footer className="teams-bottom-bar">
-        <div className="teams-bottom-actions">
+        <div className="teams-call-dock" role="toolbar" aria-label="Controles de entrevista">
+          <div className="teams-dock-timer" aria-label={`Duracion ${callDurationLabel}`}>
+            {callDurationLabel}
+          </div>
+
+          <div className="teams-dock-group">
+            <button
+              type="button"
+              onClick={() => setIsSelfViewVisible((prev) => !prev)}
+              className={`teams-dock-btn ${!isSelfViewVisible ? 'teams-dock-btn-active' : ''}`}
+              aria-label={isSelfViewVisible ? 'Ocultar vista propia' : 'Mostrar vista propia'}
+              title={isSelfViewVisible ? 'Ocultar vista propia' : 'Mostrar vista propia'}
+            >
+              <CameraIcon off={!isSelfViewVisible} />
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleRecording}
+              disabled={!speechRecognitionSupported || isLoading || isSavingAnswer || isFinishingSession}
+              className={`teams-dock-btn ${isRecording ? 'teams-dock-btn-live' : ''}`}
+              aria-label={isRecording ? 'Apagar microfono' : 'Encender microfono'}
+              title={isRecording ? 'Apagar microfono' : 'Encender microfono'}
+            >
+              <MicrophoneIcon muted={!isRecording} />
+            </button>
+
+            <button
+              type="button"
+              onClick={goToNextQuestion}
+              disabled={isLoading || isSavingAnswer || isFinishingSession}
+              className="teams-dock-btn"
+              aria-label={isSavingAnswer || isFinishingSession ? 'Guardando respuesta' : nextButtonLabel}
+              title={isSavingAnswer || isFinishingSession ? 'Guardando respuesta' : nextButtonLabel}
+            >
+              <NextIcon />
+            </button>
+
+            <button
+              type="button"
+              onClick={focusAnswerInput}
+              className="teams-dock-btn"
+              aria-label="Ir a respuesta por texto"
+              title="Ir a respuesta por texto"
+            >
+              <TranscriptIcon />
+            </button>
+          </div>
+
           <button
             type="button"
-            onClick={toggleRecording}
-            disabled={!speechRecognitionSupported || isLoading || isSavingAnswer || isFinishingSession}
-            className={`teams-action-btn ${isRecording ? 'teams-action-btn-accent' : ''}`}
+            onClick={() => openExitModal('stop')}
+            className="teams-dock-btn teams-dock-btn-danger"
+            aria-label="Finalizar entrevista"
+            title="Finalizar entrevista"
           >
-            {isRecording ? 'Detener respuesta' : 'Responder'}
+            <HangupIcon />
           </button>
-          <button
-            type="button"
-            onClick={goToNextQuestion}
-            disabled={isLoading || isSavingAnswer || isFinishingSession}
-            className="teams-action-btn teams-action-btn-primary"
-          >
-            {isSavingAnswer || isFinishingSession ? 'Guardando...' : nextButtonLabel}
-          </button>
+        </div>
+
+        <div className="teams-call-status" aria-live="polite">
+          {isRecording
+            ? 'Microfono activo con transcripcion'
+            : isSavingAnswer || isFinishingSession
+              ? 'Guardando respuesta...'
+              : 'Controles de llamada listos'}
         </div>
 
         <button
           type="button"
           onClick={() => openExitModal('stop')}
-          className="teams-hangup-btn"
+          className="teams-hangup-btn teams-hangup-btn-large teams-hangup-btn-modal"
         >
-          Finalizar
+          <span className="teams-call-control-icon teams-call-control-icon-only">
+            <HangupIcon />
+          </span>
+          <span className="teams-call-control-text">
+            <strong>Finalizar</strong>
+            <small>Salir de la llamada</small>
+          </span>
         </button>
       </footer>
 

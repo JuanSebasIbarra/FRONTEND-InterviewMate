@@ -3,27 +3,56 @@ import { useNavigate } from 'react-router-dom'
 import DeleteTemplateModal from '../components/DeleteTemplateModal'
 import DashboardSidebar from '../components/dashboard/DashboardSidebar'
 import SessionModeModal from '../components/dashboard/SessionModeModal'
+import StatisticsSection from '../components/dashboard/StatisticsSection'
 import TemplateCard from '../components/dashboard/TemplateCard'
 import { clearAuthToken } from '../lib/auth'
+import {
+  buildDashboardStatsLinkedList,
+  getDashboardSignInCount,
+  incrementDashboardSignInCount,
+} from '../lib/dashboardStats'
+import { getStudyModulesHistory } from '../lib/studyModulesHistory'
 import { formatTemplateLastActivity, sortTemplatesByRecentActivity } from '../lib/templateActivity'
-import type { InterviewTemplate } from '../models/interview'
+import type { InterviewSession, InterviewTemplate } from '../models/interview'
+import { getMySessions } from '../services/sessionService'
 import { deleteTemplate, getMyTemplates } from '../services/templateService'
+
+function ensureArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? value : []
+}
 
 function DashboardPage() {
   const navigate = useNavigate()
   const [templates, setTemplates] = useState<InterviewTemplate[]>([])
+  const [sessions, setSessions] = useState<InterviewSession[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
   const [selectedTemplate, setSelectedTemplate] = useState<InterviewTemplate | null>(null)
   const [isSessionModeModalOpen, setIsSessionModeModalOpen] = useState(false)
   const [templatePendingDeletion, setTemplatePendingDeletion] = useState<InterviewTemplate | null>(null)
   const [isDeletingTemplate, setIsDeletingTemplate] = useState(false)
+  const [dashboardSignInCount, setDashboardSignInCount] = useState(() => getDashboardSignInCount())
 
   const sortedTemplates = useMemo(() => sortTemplatesByRecentActivity(templates), [templates])
   const recentTemplates = useMemo(() => sortedTemplates.slice(0, 3), [sortedTemplates])
   const hasTemplateHistory = sortedTemplates.length > 3
+  const studyModulesHistory = useMemo(() => getStudyModulesHistory(), [])
+
+  const dashboardStatsLinkedList = useMemo(() => {
+    const completedStudySessions = studyModulesHistory.filter((item) => item.completed).length
+    const interviewsDone = sessions.filter((session) => session.status === 'COMPLETED').length
+    const signInAndPractice = dashboardSignInCount
+
+    return buildDashboardStatsLinkedList({
+      studyCompleted: completedStudySessions,
+      interviewsDone,
+      signInAndPractice,
+    })
+  }, [dashboardSignInCount, sessions, studyModulesHistory])
 
   useEffect(() => {
+    setDashboardSignInCount(incrementDashboardSignInCount())
+
     let isMounted = true
 
     const loadTemplates = async () => {
@@ -31,9 +60,13 @@ function DashboardPage() {
       setErrorMessage('')
 
       try {
-        const payload = await getMyTemplates()
+        const [templatesPayload, sessionsPayload] = await Promise.all([
+          getMyTemplates(),
+          getMySessions(),
+        ])
         if (!isMounted) return
-        setTemplates(payload ?? [])
+        setTemplates(ensureArray<InterviewTemplate>(templatesPayload))
+        setSessions(ensureArray<InterviewSession>(sessionsPayload))
       } catch (error) {
         if (!isMounted) return
         const message = error instanceof Error ? error.message : 'No se pudieron cargar las plantillas.'
@@ -196,6 +229,8 @@ function DashboardPage() {
                 </div>
               </div>
             )}
+
+            <StatisticsSection statsLinkedList={dashboardStatsLinkedList} />
           </article>
         </section>
       </main>
