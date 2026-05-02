@@ -9,7 +9,6 @@ import {
   submitQuestionAnswer,
 } from '../controllers/interviewSessionController'
 import type { InterviewQuestion, InterviewSession } from '../models/interview'
-import './InterviewLivePage.css'
 
 type TranscriptEntry = {
   id: number
@@ -61,7 +60,7 @@ const FALLBACK_QUESTIONS = [
 
 function MicrophoneIcon({ muted = false }: { muted?: boolean }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg className="h-[21px] w-[21px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z" />
       <path d="M19 11a7 7 0 0 1-12.3 4.6" />
       <path d="M5 11a7 7 0 0 0 11.6 5.3" />
@@ -74,7 +73,7 @@ function MicrophoneIcon({ muted = false }: { muted?: boolean }) {
 
 function CameraIcon({ off = false }: { off?: boolean }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg className="h-[21px] w-[21px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M15 10.5 20 7v10l-5-3.5" />
       <rect x="3" y="6" width="12" height="12" rx="2" />
       {off ? <path d="M4 4l16 16" /> : null}
@@ -84,7 +83,7 @@ function CameraIcon({ off = false }: { off?: boolean }) {
 
 function NextIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg className="h-[21px] w-[21px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M5 12h12" />
       <path d="m13 6 6 6-6 6" />
     </svg>
@@ -93,7 +92,7 @@ function NextIcon() {
 
 function TranscriptIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg className="h-[21px] w-[21px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M4 5h16" />
       <path d="M4 10h16" />
       <path d="M4 15h10" />
@@ -104,7 +103,7 @@ function TranscriptIcon() {
 
 function HangupIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg className="h-[21px] w-[21px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M4 15c4.5-4 11.5-4 16 0" />
       <path d="M6.5 14.5 5 20" />
       <path d="M17.5 14.5 19 20" />
@@ -500,19 +499,22 @@ function InterviewLivePage() {
     ? 'Finalizar'
     : 'Siguiente'
 
+  const cardClass = 'rounded-[10px] border border-[#33384b] bg-[linear-gradient(180deg,rgba(34,38,61,0.95),rgba(22,26,45,0.95))] p-3'
+  const dockButtonClass = 'inline-flex h-[52px] w-[52px] items-center justify-center border-r border-white/8 bg-transparent text-[#f4f6fb] transition hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50 max-[760px]:flex-1'
+
   return (
-    <div className="teams-call-container">
-      <header className="teams-top-bar">
-        <div className="teams-top-left">
-          <div className="teams-meeting-title">InterviewMate - Entrevista en progreso</div>
-          <div className="teams-meeting-meta">Duracion {callDurationLabel}</div>
+    <div className="flex h-screen flex-col text-[#f4f6fb] [background:radial-gradient(circle_at_top_left,rgba(224,123,57,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(120,170,255,0.1),transparent_24%),#1a1a2e]">
+      <header className="flex h-16 items-center border-b border-[#33384b] bg-[rgba(31,31,58,0.92)] px-4 backdrop-blur-md max-[760px]:h-auto max-[760px]:flex-col max-[760px]:items-start max-[760px]:gap-2 max-[760px]:px-3 max-[760px]:py-2.5">
+        <div className="min-w-0">
+          <div className="truncate font-bold tracking-[0.01em]">InterviewMate - Entrevista en progreso</div>
+          <div className="text-[0.85rem] text-[#a8afc3]">Duracion {callDurationLabel}</div>
         </div>
       </header>
 
-      <div className="teams-content-area">
-        <section className="teams-main-stage">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_360px] gap-3.5 p-3.5 max-[1100px]:grid-cols-1 max-[1100px]:grid-rows-[minmax(0,1fr)_auto] max-[760px]:gap-2.5 max-[760px]:p-2.5">
+        <section className="relative min-h-0 overflow-hidden rounded-xl border border-white/12 bg-[#0d1117]">
           {isLoading ? (
-            <div className="teams-loading-stage">
+            <div className="grid h-full w-full place-items-center text-[#a8afc3]">
               <p>Cargando entrevista...</p>
             </div>
           ) : (
@@ -523,45 +525,51 @@ function InterviewLivePage() {
             />
           )}
 
-          <div className="participant-label">Entrevistador IA</div>
+          <div className="absolute bottom-4 left-4 z-[5] rounded-md bg-black/62 px-2.5 py-1 text-sm max-[760px]:bottom-2.5 max-[760px]:left-2.5 max-[760px]:text-xs">
+            Entrevistador IA
+          </div>
 
-          <div className={`pip-self ${isSelfViewVisible ? '' : 'pip-self-hidden'}`}>
+          <div
+            className={`${
+              isSelfViewVisible ? 'flex' : 'hidden'
+            } absolute bottom-4 right-4 z-[6] h-[120px] w-[180px] overflow-hidden rounded-[10px] border-2 border-white/30 bg-[#0a0a1a] max-[760px]:top-3 max-[760px]:bottom-auto max-[760px]:right-3 max-[760px]:h-[60px] max-[760px]:w-[90px]`}
+          >
             {userAvatarUrl ? (
-              <img src={userAvatarUrl} alt={userDisplayName} className="pip-profile-photo" />
+              <img src={userAvatarUrl} alt={userDisplayName} className="block h-full w-full object-cover" />
             ) : (
-              <div className="pip-placeholder">
+              <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-[linear-gradient(140deg,rgba(93,126,188,0.3),rgba(14,16,33,0.95))] text-[#dbe1f5]">
                 <span>{userDisplayName.charAt(0).toUpperCase()}</span>
-                <small>{userDisplayName}</small>
+                <small className="text-[0.72rem] text-[#bac2d8]">{userDisplayName}</small>
               </div>
             )}
           </div>
         </section>
 
-        <aside className="teams-side-panel">
-          <section className="teams-card">
-            <p className="teams-card-kicker">Pregunta actual</p>
-            <p className="teams-question-text">{currentQuestionText}</p>
+        <aside className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-2.5 max-[1100px]:grid-cols-2 max-[1100px]:grid-rows-2 max-[760px]:grid-cols-1">
+          <section className={cardClass}>
+            <p className="m-0 text-[0.72rem] uppercase tracking-[0.08em] text-[#a8afc3]">Pregunta actual</p>
+            <p className="mt-1.5 text-base leading-[1.45]">{currentQuestionText}</p>
           </section>
 
-          <section className="teams-card teams-card-scroll">
-            <p className="teams-card-kicker">Transcripcion</p>
+          <section className={`${cardClass} flex min-h-0 flex-col max-[1100px]:min-h-[180px]`}>
+            <p className="m-0 text-[0.72rem] uppercase tracking-[0.08em] text-[#a8afc3]">Transcripcion</p>
             {!hasAnyAnswerInCurrentQuestion && !isRecording && (
-              <p className="teams-muted-text">
+              <p className="mt-2 text-[0.9rem] text-[#a8afc3]">
                 Presiona Silenciar para iniciar la transcripcion de tu respuesta.
               </p>
             )}
 
-            <div className="teams-transcript-list">
+            <div className="mt-2.5 flex flex-col gap-2 overflow-y-auto">
               {currentEntries.map((entry) => (
-                <p key={entry.id} className="teams-transcript-item">
+                <p key={entry.id} className="m-0 rounded-lg border border-white/14 bg-[rgba(8,11,22,0.55)] px-2.5 py-[9px] text-[0.92rem] text-[#e6eaf8]">
                   {entry.text || 'Escuchando...'}
                 </p>
               ))}
             </div>
           </section>
 
-          <section className="teams-card">
-            <p className="teams-card-kicker">Respuesta por texto</p>
+          <section className={cardClass}>
+            <p className="m-0 text-[0.72rem] uppercase tracking-[0.08em] text-[#a8afc3]">Respuesta por texto</p>
             <textarea
               ref={answerInputRef}
               value={currentTypedAnswer}
@@ -574,33 +582,33 @@ function InterviewLivePage() {
               }}
               rows={4}
               placeholder="Tambien puedes responder escribiendo aqui..."
-              className="teams-answer-input"
+              className="mt-2 w-full resize-y rounded-lg border border-white/20 bg-[#0d1222] p-2.5 text-[0.92rem] text-[#f4f6fb] outline-none transition focus:border-[rgba(224,123,57,0.75)] focus:shadow-[0_0_0_2px_rgba(224,123,57,0.2)]"
             />
           </section>
 
           {errorMessage && (
-            <p className="teams-alert teams-alert-error">{errorMessage}</p>
+            <p className="m-0 rounded-lg border border-[rgba(241,109,109,0.6)] bg-[rgba(129,32,32,0.28)] px-2.5 py-[9px] text-[0.86rem] text-[#ffc3c3]">{errorMessage}</p>
           )}
 
           {!speechRecognitionSupported && (
-            <p className="teams-alert teams-alert-warning">
+            <p className="m-0 rounded-lg border border-[rgba(255,205,78,0.55)] bg-[rgba(125,98,21,0.28)] px-2.5 py-[9px] text-[0.86rem] text-[#ffebb2]">
               Tu navegador no soporta transcripcion automatica. Intenta en Chrome o Edge.
             </p>
           )}
         </aside>
       </div>
 
-      <footer className="teams-bottom-bar">
-        <div className="teams-call-dock" role="toolbar" aria-label="Controles de entrevista">
-          <div className="teams-dock-timer" aria-label={`Duracion ${callDurationLabel}`}>
+      <footer className="flex min-h-[88px] flex-col items-center justify-center gap-3.5 border-t border-[#33384b] bg-[rgba(31,31,58,0.94)] px-4 pb-3.5 pt-2.5 max-[760px]:min-h-0 max-[760px]:px-3 max-[760px]:py-2.5">
+        <div className="flex flex-wrap items-center justify-center overflow-hidden rounded-[10px] border border-white/10 bg-[rgba(42,47,68,0.96)] shadow-[0_12px_30px_rgba(0,0,0,0.22)] max-[760px]:w-full max-[760px]:justify-stretch" role="toolbar" aria-label="Controles de entrevista">
+          <div className="flex min-w-[86px] self-stretch items-center justify-center border-r border-white/8 bg-white/[0.03] px-4 text-base font-medium text-[#bfc7db] max-[760px]:min-h-11 max-[760px]:w-full max-[760px]:border-b max-[760px]:border-r-0" aria-label={`Duracion ${callDurationLabel}`}>
             {callDurationLabel}
           </div>
 
-          <div className="teams-dock-group">
+          <div className="flex items-stretch max-[760px]:w-[calc(100%-56px)] max-[760px]:flex-1">
             <button
               type="button"
               onClick={() => setIsSelfViewVisible((prev) => !prev)}
-              className={`teams-dock-btn ${!isSelfViewVisible ? 'teams-dock-btn-active' : ''}`}
+              className={`${dockButtonClass} ${!isSelfViewVisible ? 'bg-white/8' : ''}`}
               aria-label={isSelfViewVisible ? 'Ocultar vista propia' : 'Mostrar vista propia'}
               title={isSelfViewVisible ? 'Ocultar vista propia' : 'Mostrar vista propia'}
             >
@@ -611,7 +619,7 @@ function InterviewLivePage() {
               type="button"
               onClick={toggleRecording}
               disabled={!speechRecognitionSupported || isLoading || isSavingAnswer || isFinishingSession}
-              className={`teams-dock-btn ${isRecording ? 'teams-dock-btn-live' : ''}`}
+              className={`${dockButtonClass} ${isRecording ? 'bg-[rgba(49,130,100,0.4)] text-[#dff8ea]' : ''}`}
               aria-label={isRecording ? 'Apagar microfono' : 'Encender microfono'}
               title={isRecording ? 'Apagar microfono' : 'Encender microfono'}
             >
@@ -622,7 +630,7 @@ function InterviewLivePage() {
               type="button"
               onClick={goToNextQuestion}
               disabled={isLoading || isSavingAnswer || isFinishingSession}
-              className="teams-dock-btn"
+              className={dockButtonClass}
               aria-label={isSavingAnswer || isFinishingSession ? 'Guardando respuesta' : nextButtonLabel}
               title={isSavingAnswer || isFinishingSession ? 'Guardando respuesta' : nextButtonLabel}
             >
@@ -632,7 +640,7 @@ function InterviewLivePage() {
             <button
               type="button"
               onClick={focusAnswerInput}
-              className="teams-dock-btn"
+              className={dockButtonClass}
               aria-label="Ir a respuesta por texto"
               title="Ir a respuesta por texto"
             >
@@ -643,7 +651,7 @@ function InterviewLivePage() {
           <button
             type="button"
             onClick={() => openExitModal('stop')}
-            className="teams-dock-btn teams-dock-btn-danger"
+            className="inline-flex h-[52px] w-14 items-center justify-center border-r-0 bg-[#b83343] text-white transition hover:bg-[#ca3d4e] disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Finalizar entrevista"
             title="Finalizar entrevista"
           >
@@ -651,7 +659,7 @@ function InterviewLivePage() {
           </button>
         </div>
 
-        <div className="teams-call-status" aria-live="polite">
+        <div className="text-[0.78rem] text-[#a8afc3]" aria-live="polite">
           {isRecording
             ? 'Microfono activo con transcripcion'
             : isSavingAnswer || isFinishingSession
@@ -662,14 +670,14 @@ function InterviewLivePage() {
         <button
           type="button"
           onClick={() => openExitModal('stop')}
-          className="teams-hangup-btn teams-hangup-btn-large teams-hangup-btn-modal"
+          className="inline-flex min-w-0 items-center gap-3 rounded-full border border-[rgba(196,43,28,0.65)] bg-[#c42b1c] px-[18px] py-2.5 text-[0.9rem] text-white transition hover:brightness-105"
         >
-          <span className="teams-call-control-icon teams-call-control-icon-only">
+          <span className="inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-white/12">
             <HangupIcon />
           </span>
-          <span className="teams-call-control-text">
-            <strong>Finalizar</strong>
-            <small>Salir de la llamada</small>
+          <span className="flex flex-col items-start text-left">
+            <strong className="text-[0.92rem] font-bold">Finalizar</strong>
+            <small className="text-[0.76rem] text-[rgba(255,237,237,0.82)]">Salir de la llamada</small>
           </span>
         </button>
       </footer>
@@ -680,29 +688,29 @@ function InterviewLivePage() {
           onClick={closeExitModal}
         >
           <div
-            className="teams-exit-modal"
+            className="w-[min(520px,95vw)] rounded-xl border border-white/14 bg-[#181d31] p-4 shadow-[0_22px_64px_rgba(0,0,0,0.45)]"
             onClick={(event) => event.stopPropagation()}
           >
-            <p className="teams-card-kicker">Confirmar salida</p>
-            <h2 className="teams-exit-title">
+            <p className="m-0 text-[0.72rem] uppercase tracking-[0.08em] text-[#a8afc3]">Confirmar salida</p>
+            <h2 className="mt-2 text-[1.45rem]">
               {exitMode === 'stop' ? 'Detener entrevista' : 'Salir de entrevista'}
             </h2>
-            <p className="teams-exit-text">
+            <p className="mt-2 leading-[1.45] text-[#c3cae0]">
               Si sales ahora se cancelara la entrevista y no habra feedback generado.
             </p>
 
-            <div className="teams-exit-actions">
+            <div className="mt-4 flex flex-wrap justify-end gap-2.5">
               <button
                 type="button"
                 onClick={closeExitModal}
-                className="teams-action-btn teams-action-btn-visual"
+                className="rounded-full border border-[#495067] bg-[#2a2f44] px-3.5 py-2.5 text-[0.88rem] text-[#f4f6fb] opacity-85 transition hover:-translate-y-px hover:border-[#69728f] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Continuar entrevista
               </button>
               <button
                 type="button"
                 onClick={confirmExitInterview}
-                className="teams-hangup-btn"
+                className="rounded-full border border-[rgba(196,43,28,0.65)] bg-[#c42b1c] px-4 py-2.5 text-[0.9rem] text-white transition hover:brightness-105"
               >
                 Confirmar salida
               </button>

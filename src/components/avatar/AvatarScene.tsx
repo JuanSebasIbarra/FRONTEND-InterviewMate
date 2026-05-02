@@ -15,9 +15,11 @@ export function AvatarScene({
   interviewerName = 'Entrevistador IA',
   modelUrl = '/models/avatar_1776746364480.glb',
 }: AvatarSceneProps) {
+  const isTalking = avatarState === 'talking'
+
   return (
     <div
-      className="avatar-stage-frame"
+      className="relative h-full w-full"
       style={{
         backgroundImage: `url(${avatarBg})`,
         backgroundSize: 'cover',
@@ -41,7 +43,9 @@ export function AvatarScene({
         <Suspense
           fallback={(
             <Html center>
-              <div className="avatar-loading">Cargando avatar...</div>
+              <div className="rounded-full border border-white/25 bg-[#0a101fb8] px-3 py-2 text-[0.82rem] text-[#d9dff2]">
+                Cargando avatar...
+              </div>
             </Html>
           )}
         >
@@ -56,16 +60,21 @@ export function AvatarScene({
         </Suspense>
       </Canvas>
 
-      <div className="avatar-stage-label" aria-hidden>
-        <div className="avatar-label-left">
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/65 to-transparent px-3.5 py-2.5"
+        aria-hidden
+      >
+        <div className="flex items-center gap-2 text-[0.84rem]">
           <span
-            className={`avatar-status-dot ${
-              avatarState === 'talking' ? 'avatar-status-dot-active' : ''
+            className={`h-2 w-2 rounded-full ${
+              isTalking
+                ? 'bg-[#f0a766] shadow-[0_0_10px_rgba(240,167,102,0.85)]'
+                : 'bg-[#7c859e]'
             }`}
           />
           <span>{interviewerName}</span>
         </div>
-        <span className="avatar-state-badge">{avatarState}</span>
+        <span className="text-[0.72rem] uppercase tracking-[0.08em] text-[#c5ccdf]">{avatarState}</span>
       </div>
     </div>
   )
