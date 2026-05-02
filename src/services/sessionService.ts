@@ -1,3 +1,5 @@
+import { extractPageData } from '../lib/pagination'
+import type { PageData, PageResponse } from '../models/api'
 import type { CreateSessionRequest, InterviewSession } from '../models/interview'
 import { httpRequest } from './httpClient'
 
@@ -29,5 +31,10 @@ export function getSessionsByTemplate(templateId: string) {
 }
 
 export function getMySessions() {
-  return httpRequest<InterviewSession[]>('/api/v1/sessions/me')
+  return getMySessionsPage().then((response) => response.data)
+}
+
+export async function getMySessionsPage(): Promise<PageData<InterviewSession>> {
+  const response = await httpRequest<PageResponse<InterviewSession> | InterviewSession[]>('/api/v1/sessions/me')
+  return extractPageData<InterviewSession>(response)
 }
