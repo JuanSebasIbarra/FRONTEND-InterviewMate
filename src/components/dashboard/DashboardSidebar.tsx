@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import LoggedUserMenu from './LoggedUserMenu'
-import InterviewMateIcon from '../../assets/interviewmate-icon.svg'
+import InterviewMateIcon from '../../assets/interviewmate-logo.svg'
+import { readLocalSettings } from '../../controllers/settingsController'
 
 type DashboardSidebarProps = {
   onLogout: () => void
@@ -10,6 +11,11 @@ function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
   const location = useLocation()
   const searchParams = new URLSearchParams(location.search)
   const activeSettingsSection = searchParams.get('section') ?? 'personal'
+  const localSettings = readLocalSettings()
+  const displayName = [localSettings.firstName, localSettings.lastName]
+    .filter((value) => Boolean(value?.trim()))
+    .join(' ')
+    .trim() || 'Usuario'
 
   return (
     <aside className="flex min-h-105 flex-col border border-zinc-300 bg-zinc-50 px-3 py-6 w-2xs">
@@ -42,7 +48,7 @@ function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
       </div>
 
       <div className="mt-auto pt-6">
-        <LoggedUserMenu username="Sebastian" onLogout={onLogout} />
+        <LoggedUserMenu username={displayName} onLogout={onLogout} />
       </div>
     </aside>
   )
