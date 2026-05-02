@@ -78,3 +78,38 @@ export async function httpRequest<T>(path: string, init?: RequestInit): Promise<
 
   return (parsed as T) ?? (null as T)
 }
+
+export async function httpRequestBlob(path: string, init?: RequestInit): Promise<Blob> {
+  const normalizedPath = normalizePath(path)
+  const requiresAuth = !PUBLIC_ENDPOINTS.has(normalizedPath)
+  const token = getAuthToken()
+  const headers = new Headers(init?.headers ?? {})
+
+  if (requiresAuth && !token.trim()) {
+    throw new Error('Debes iniciar sesion para realizar esta accion.')
+  }
+
+  if (token.trim() && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  const response = await fetch(buildApiUrl(normalizedPath), {
+    ...init,
+    headers,
+    credentials: useCredentials ? 'include' : init?.credentials,
+  })
+
+  if (!response.ok) {
+    let parsed: unknown = null
+    try {
+      const raw = await response.text()
+      parsed = tryParseJson(raw)
+    } catch {
+      parsed = null
+    }
+
+    throw new Error(extractErrorMessage(parsed, 'No se pudo completar la operación.'))
+  }
+
+  return response.blob()
+}
