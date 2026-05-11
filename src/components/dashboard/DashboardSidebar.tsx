@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import LoggedUserMenu from './LoggedUserMenu'
-import InterviewMateIcon from '../../assets/interviewmate-logo.svg'
+import InterviewMateIcon from '../../assets/interviewmate-main-logo.png'
 import { readLocalSettings } from '../../controllers/settingsController'
 
 type DashboardSidebarProps = {
@@ -18,14 +18,17 @@ function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
     .trim() || 'Usuario'
 
   return (
-    <aside className="flex min-h-105 flex-col border border-zinc-300 bg-zinc-50 px-3 py-6 w-2xs">
+    <aside className="flex min-h-105 w-72 flex-col border border-zinc-300 bg-zinc-50 px-3 py-6">
       <div className="flex flex-col items-center gap-2">
         <Link
           to="/dashboard"
-          className="flex w-full px-4 py-3 text-left text-lg items-center justify-center text-zinc-700 transition hover:bg-interviewmate-blue/25"
+          className="flex w-full items-center justify-center rounded-md px-3 py-3 transition hover:bg-interviewmate-blue/25"
         >
-          <img src={InterviewMateIcon} alt="icon" className="w-16"/>
-          InterviewMate
+          <img
+            src={InterviewMateIcon}
+            alt="InterviewMate"
+            className="h-auto w-full max-w-[190px] object-contain"
+          />
         </Link>
         <Link
           to="/settings?section=personal"
