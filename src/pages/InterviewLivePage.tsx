@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import AvatarScene from '../components/avatar/AvatarScene'
-import type { AvatarState } from '../components/AvatarGLB'
+import { AvatarCanvas } from '../components/avatar/AvatarCanvas'
+import type { AnimacionEstado } from '../components/avatar/AvatarController'
+import { useInterviewSession } from '../hooks/useInterviewSession'
+import interviewMateLogo from '../assets/interviewmate-main-logo.png'
 import { readLocalSettings } from '../controllers/settingsController'
 import {
   finishInterviewSession,
@@ -136,6 +138,9 @@ function InterviewLivePage() {
   const [userAvatarUrl, setUserAvatarUrl] = useState('')
   const [userDisplayName, setUserDisplayName] = useState('Candidato')
   const [isSelfViewVisible, setIsSelfViewVisible] = useState(true)
+  const [avatarAnimacion, setAvatarAnimacion] = useState<AnimacionEstado>('idle')
+  const [avatarSpeaking, setAvatarSpeaking] = useState(false)
+  const avatarMouthPulseRef = useRef<(() => void) | null>(null)
 
   const speechRecognitionSupported = Boolean(
     window.SpeechRecognition || window.webkitSpeechRecognition,
@@ -280,12 +285,43 @@ function InterviewLivePage() {
     }
   }, [questionKey])
 
-  const avatarState: AvatarState = useMemo(() => {
-    if (isSavingAnswer || isFinishingSession) return 'thinking'
-    if (isRecording) return 'listening'
-    if (isQuestionIntroActive) return 'talking'
+  const baseAvatarState: AnimacionEstado = useMemo(() => {
+    if (isSavingAnswer || isFinishingSession) return 'pensar'
+    if (isQuestionIntroActive) return 'hablar'
     return 'idle'
-  }, [isFinishingSession, isQuestionIntroActive, isRecording, isSavingAnswer])
+  }, [isFinishingSession, isQuestionIntroActive, isSavingAnswer])
+
+  useEffect(() => {
+    setAvatarAnimacion(baseAvatarState)
+  }, [baseAvatarState])
+
+  const { speak, cancelSpeak } = useInterviewSession({
+    onAnimacion: useCallback((a: AnimacionEstado) => setAvatarAnimacion(a), []),
+    onSpeakStart: useCallback(() => setAvatarSpeaking(true), []),
+    onMouthPulse: useCallback(() => avatarMouthPulseRef.current?.(), []),
+    onSpeakEnd: useCallback(() => setAvatarSpeaking(false), []),
+  })
+
+  // Habla la pregunta cuando el intro del avatar se activa
+  useEffect(() => {
+    if (isQuestionIntroActive && !isLoading && currentQuestionText) {
+      setAvatarAnimacion('hablar')
+      speak(currentQuestionText)
+    }
+  }, [isQuestionIntroActive, isLoading, currentQuestionText, speak])
+
+  // Cancela la síntesis si el usuario abandona la página
+  useEffect(() => {
+    return () => { cancelSpeak() }
+  }, [cancelSpeak])
+
+  // Wire triggerMouthPulse desde el controlador del canvas hacia el hook de voz
+  const handleControllerReady = useCallback(
+    (triggerMouthPulse: () => void) => {
+      avatarMouthPulseRef.current = triggerMouthPulse
+    },
+    [],
+  )
 
   const callDurationLabel = useMemo(() => {
     const hours = Math.floor(elapsedSeconds / 3600)
@@ -506,8 +542,12 @@ function InterviewLivePage() {
     <div className="flex h-screen flex-col text-[#f4f6fb] [background:radial-gradient(circle_at_top_left,rgba(224,123,57,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(120,170,255,0.1),transparent_24%),#1a1a2e]">
       <header className="flex h-16 items-center border-b border-[#33384b] bg-[rgba(31,31,58,0.92)] px-4 backdrop-blur-md max-[760px]:h-auto max-[760px]:flex-col max-[760px]:items-start max-[760px]:gap-2 max-[760px]:px-3 max-[760px]:py-2.5">
         <div className="min-w-0">
-          <div className="truncate font-bold tracking-[0.01em]">InterviewMate - Entrevista en progreso</div>
-          <div className="text-[0.85rem] text-[#a8afc3]">Duracion {callDurationLabel}</div>
+          <img
+            src={interviewMateLogo}
+            alt="InterviewMate"
+            className="h-auto w-full max-w-[170px] rounded-md bg-white/90 p-1 object-contain"
+          />
+          <div className="mt-1 text-[0.85rem] text-[#a8afc3]">Entrevista en progreso · Duracion {callDurationLabel}</div>
         </div>
       </header>
 
@@ -518,10 +558,11 @@ function InterviewLivePage() {
               <p>Cargando entrevista...</p>
             </div>
           ) : (
-            <AvatarScene
-              avatarState={avatarState}
+            <AvatarCanvas
+              animacion={avatarAnimacion}
+              isSpeaking={avatarSpeaking}
               interviewerName="Entrevistador IA"
-              modelUrl="/models/avatar_1776746364480.glb"
+              onControllerReady={handleControllerReady}
             />
           )}
 

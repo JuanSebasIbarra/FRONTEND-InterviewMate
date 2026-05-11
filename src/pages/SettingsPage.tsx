@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import LoggedUserMenu from '../components/dashboard/LoggedUserMenu'
+import InterviewMateLogo from '../assets/interviewmate-main-logo.png'
 import { clearAuthToken } from '../lib/auth'
 import {
   loadProfileData,
@@ -206,20 +207,14 @@ function SettingsPage() {
         .st-brand {
           display: flex;
           align-items: center;
-          gap: 8px;
-          font-size: 14px;
-          font-weight: 500;
-          color: #111;
           cursor: pointer;
+          width: 190px;
+          max-width: 100%;
         }
-        .st-brand-dot {
-          width: 20px;
-          height: 20px;
-          border-radius: 5px;
-          background: #111;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+        .st-brand img {
+          width: 100%;
+          height: auto;
+          object-fit: contain;
         }
         .st-topbar-right {
           display: flex;
@@ -549,13 +544,7 @@ function SettingsPage() {
       <div className="st-root st">
         <div className="st-topbar">
           <div className="st-brand" onClick={() => navigate('/dashboard')}>
-            <div className="st-brand-dot">
-              <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                <circle cx="6" cy="6" r="4" fill="white" />
-                <circle cx="6" cy="6" r="2" fill="#111" />
-              </svg>
-            </div>
-            InterviewMate
+            <img src={InterviewMateLogo} alt="InterviewMate" />
           </div>
           <div className="st-topbar-right">
             <button type="button" className="st-back" onClick={() => navigate('/dashboard')}>
