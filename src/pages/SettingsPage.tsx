@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import InterviewMateIcon from '../assets/interviewmate-logo.svg'
 import LoggedUserMenu from '../components/dashboard/LoggedUserMenu'
 import { clearAuthToken } from '../lib/auth'
 import {
@@ -212,14 +213,10 @@ function SettingsPage() {
           color: #111;
           cursor: pointer;
         }
-        .st-brand-dot {
-          width: 20px;
-          height: 20px;
-          border-radius: 5px;
-          background: #111;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+        .st-brand-logo {
+          width: 28px;
+          height: 28px;
+          object-fit: contain;
         }
         .st-topbar-right {
           display: flex;
@@ -549,12 +546,7 @@ function SettingsPage() {
       <div className="st-root st">
         <div className="st-topbar">
           <div className="st-brand" onClick={() => navigate('/dashboard')}>
-            <div className="st-brand-dot">
-              <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                <circle cx="6" cy="6" r="4" fill="white" />
-                <circle cx="6" cy="6" r="2" fill="#111" />
-              </svg>
-            </div>
+            <img src={InterviewMateIcon} alt="InterviewMate logo" className="st-brand-logo" />
             InterviewMate
           </div>
           <div className="st-topbar-right">
