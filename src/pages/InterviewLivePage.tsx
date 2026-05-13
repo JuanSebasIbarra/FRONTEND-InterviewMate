@@ -1,9 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { AvatarCanvas } from '../components/avatar/AvatarCanvas'
-import type { AnimacionEstado } from '../components/avatar/AvatarController'
-import { useInterviewSession } from '../hooks/useInterviewSession'
-import interviewMateLogo from '../assets/interviewmate-main-logo.png'
+import { AvatarScene } from '../components/avatar/AvatarScene'
+import type { AvatarState } from '../components/AvatarGLB'
 import { readLocalSettings } from '../controllers/settingsController'
 import {
   finishInterviewSession,
@@ -11,6 +9,18 @@ import {
   submitQuestionAnswer,
 } from '../controllers/interviewSessionController'
 import type { InterviewQuestion, InterviewSession } from '../models/interview'
+import { useInterviewSession } from '../hooks/useInterviewSession'
+import type { AnimacionEstado } from '../hooks/useInterviewSession'
+import { useQuestionTTS } from '../hooks/useQuestionTTS'
+
+// Mapea el estado de animación de la IA al estado visual del avatar 3D
+function toAvatarState(animacion: AnimacionEstado): AvatarState | null {
+  if (animacion === 'celebrar') return 'celebrating'
+  if (animacion === 'corregir') return 'correcting'
+  if (animacion === 'pensar') return 'thinking'
+  if (animacion === 'hablar' || animacion === 'animar') return 'talking'
+  return null // 'idle' → liberar control al useMemo normal
+}
 
 type TranscriptEntry = {
   id: number
@@ -108,6 +118,8 @@ function InterviewLivePage() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const recognitionRef = useRef<SpeechRecognitionInstanceLike | null>(null)
   const answerInputRef = useRef<HTMLTextAreaElement | null>(null)
+  // Evita autoplay bloqueado: la primera pregunta usa el timer, las siguientes usan TTS
+  const isFirstQuestionRef = useRef(true)
 
   const [session, setSession] = useState<InterviewSession | null>(null)
   const [questions, setQuestions] = useState<InterviewQuestion[]>([])
@@ -127,6 +139,8 @@ function InterviewLivePage() {
   const [isQuestionIntroActive, setIsQuestionIntroActive] = useState(true)
   const [userAvatarUrl, setUserAvatarUrl] = useState('')
   const [userDisplayName, setUserDisplayName] = useState('Candidato')
+  // Estado del avatar impulsado por la IA (null = dejar que el useMemo normal decida)
+  const [aiAvatarOverride, setAiAvatarOverride] = useState<AvatarState | null>(null)
 
   const speechRecognitionSupported = Boolean(
     window.SpeechRecognition || window.webkitSpeechRecognition,
@@ -261,53 +275,41 @@ function InterviewLivePage() {
   )
 
   useEffect(() => {
-    setIsQuestionIntroActive(true)
-    const timeout = window.setTimeout(() => {
-      setIsQuestionIntroActive(false)
-    }, 2800)
+    const currentQuestion = hasBackendQuestions ? questions[currentQuestionIndex] : null
 
-    return () => {
-      window.clearTimeout(timeout)
+    if (isFirstQuestionRef.current) {
+      // Primera pregunta: sin autoplay (el navegador lo bloquea sin gesto del usuario)
+      // Usar timer visual solamente; el TTS arranca desde la segunda pregunta
+      isFirstQuestionRef.current = false
+      setIsQuestionIntroActive(true)
+      const timeout = window.setTimeout(() => { setIsQuestionIntroActive(false) }, 2800)
+      return () => { window.clearTimeout(timeout) }
     }
+
+    if (currentQuestion) {
+      // Después del primer Next: intenta TTS del backend; si falla, lee el texto con Web Speech
+      void playQuestionTTS(currentQuestion.id, currentQuestion.question)
+    } else {
+      // Preguntas de fallback local: timer fijo de 2800ms
+      setIsQuestionIntroActive(true)
+      const timeout = window.setTimeout(() => {
+        setIsQuestionIntroActive(false)
+      }, 2800)
+      return () => { window.clearTimeout(timeout) }
+    }
+
+    return () => { stopTTS() }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questionKey])
 
-  const baseAvatarState: AnimacionEstado = useMemo(() => {
-    if (isSavingAnswer || isFinishingSession) return 'pensar'
-    if (isQuestionIntroActive) return 'hablar'
+  const avatarState: AvatarState = useMemo(() => {
+    // La IA toma prioridad sobre la lógica de sesión mientras habla el feedback
+    if (aiAvatarOverride !== null) return aiAvatarOverride
+    if (isSavingAnswer || isFinishingSession) return 'thinking'
+    if (isRecording) return 'listening'
+    if (isQuestionIntroActive) return 'talking'
     return 'idle'
-  }, [isFinishingSession, isQuestionIntroActive, isSavingAnswer])
-
-  useEffect(() => {
-    setAvatarAnimacion(baseAvatarState)
-  }, [baseAvatarState])
-
-  const { speak, cancelSpeak } = useInterviewSession({
-    onAnimacion: useCallback((a: AnimacionEstado) => setAvatarAnimacion(a), []),
-    onSpeakStart: useCallback(() => setAvatarSpeaking(true), []),
-    onMouthPulse: useCallback(() => avatarMouthPulseRef.current?.(), []),
-    onSpeakEnd: useCallback(() => setAvatarSpeaking(false), []),
-  })
-
-  // Habla la pregunta cuando el intro del avatar se activa
-  useEffect(() => {
-    if (isQuestionIntroActive && !isLoading && currentQuestionText) {
-      setAvatarAnimacion('hablar')
-      speak(currentQuestionText)
-    }
-  }, [isQuestionIntroActive, isLoading, currentQuestionText, speak])
-
-  // Cancela la síntesis si el usuario abandona la página
-  useEffect(() => {
-    return () => { cancelSpeak() }
-  }, [cancelSpeak])
-
-  // Wire triggerMouthPulse desde el controlador del canvas hacia el hook de voz
-  const handleControllerReady = useCallback(
-    (triggerMouthPulse: () => void) => {
-      avatarMouthPulseRef.current = triggerMouthPulse
-    },
-    [],
-  )
+  }, [aiAvatarOverride, isFinishingSession, isQuestionIntroActive, isRecording, isSavingAnswer])
 
   const callDurationLabel = useMemo(() => {
     const hours = Math.floor(elapsedSeconds / 3600)
@@ -320,6 +322,22 @@ function InterviewLivePage() {
 
     return `${hh}:${mm}:${ss}`
   }, [elapsedSeconds])
+
+  const { evaluarRespuesta, isEvaluating } = useInterviewSession({
+    // Activa el estado visual del avatar según la animación que indique la IA
+    onAnimacion: (animacion) => { setAiAvatarOverride(toAvatarState(animacion)) },
+    // Al terminar la locución, devolver el control al flujo normal
+    onSpeakEnd: () => { setAiAvatarOverride(null) },
+    onSpeakStart: () => {},
+    onMouthPulse: () => {},
+  })
+
+  const { playQuestionTTS, stopTTS } = useQuestionTTS({
+    // El avatar entra en 'talking' al empezar el audio de la pregunta
+    onStart: () => { setIsQuestionIntroActive(true) },
+    // Al terminar el audio, liberar el estado talking
+    onEnd: () => { setIsQuestionIntroActive(false) },
+  })
 
   const stopRecording = () => {
     recognitionRef.current?.stop()
@@ -427,6 +445,7 @@ function InterviewLivePage() {
         if (prev.includes(currentQuestion.id)) return prev
         return [...prev, currentQuestion.id]
       })
+      void evaluarRespuesta(currentQuestion.question, answer)
       return { ok: true, answeredQuestionId: currentQuestion.id }
     } catch {
       setErrorMessage('No se pudo guardar la respuesta. Puedes intentarlo nuevamente.')
@@ -613,7 +632,7 @@ function InterviewLivePage() {
               <button
                 type="button"
                 onClick={() => void goToNextQuestion()}
-                disabled={isLoading || isSavingAnswer || isFinishingSession}
+                disabled={isLoading || isSavingAnswer || isFinishingSession || isEvaluating}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#e07b39] px-3 py-1.5 text-[0.82rem] font-medium text-white transition hover:bg-[#d46f2f] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {isSavingAnswer || isFinishingSession ? (
@@ -650,7 +669,7 @@ function InterviewLivePage() {
             <button
               type="button"
               onClick={toggleRecording}
-              disabled={!speechRecognitionSupported || isLoading || isSavingAnswer || isFinishingSession}
+              disabled={!speechRecognitionSupported || isLoading || isSavingAnswer || isFinishingSession || isEvaluating}
               className={`${dockButtonClass} ${isRecording ? 'bg-[rgba(49,130,100,0.4)] text-[#dff8ea]' : ''}`}
               aria-label={isRecording ? 'Apagar microfono' : 'Encender microfono'}
               title={isRecording ? 'Apagar microfono' : 'Encender microfono'}
@@ -661,7 +680,7 @@ function InterviewLivePage() {
             <button
               type="button"
               onClick={goToNextQuestion}
-              disabled={isLoading || isSavingAnswer || isFinishingSession}
+              disabled={isLoading || isSavingAnswer || isFinishingSession || isEvaluating}
               className={dockButtonClass}
               aria-label={isSavingAnswer || isFinishingSession ? 'Guardando respuesta' : nextButtonLabel}
               title={isSavingAnswer || isFinishingSession ? 'Guardando respuesta' : nextButtonLabel}

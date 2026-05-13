@@ -1,8 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { httpRequest } from '../services/httpClient'
-import type { AnimacionEstado } from '../components/avatar/AvatarController'
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
+export type AnimacionEstado = 'idle' | 'hablar' | 'celebrar' | 'corregir' | 'animar' | 'pensar'
 
 export type EvalResponse = {
   correcto: boolean
@@ -27,20 +26,11 @@ type UseInterviewSessionResult = {
   error: string | null
 }
 
-// ─── Selección de voz española ────────────────────────────────────────────────
-
-/**
- * Devuelve la mejor voz española disponible priorizando voces en la nube
- * (Google/Microsoft). Funciona en Chrome, Edge y Safari.
- */
 function getBestSpanishVoice(): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices()
   if (!voices.length) return null
-
   const LANG_PRIORITY = ['es-ES', 'es-US', 'es-MX', 'es-419', 'es']
-
   for (const lang of LANG_PRIORITY) {
-    // Preferir voces remotas (mayor calidad) sobre las locales
     const remote = voices.find((v) => v.lang.startsWith(lang) && !v.localService)
     if (remote) return remote
     const local = voices.find((v) => v.lang.startsWith(lang))
@@ -49,111 +39,80 @@ function getBestSpanishVoice(): SpeechSynthesisVoice | null {
   return null
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
-
 export function useInterviewSession(options: UseInterviewSessionOptions): UseInterviewSessionResult {
-  const { onAnimacion, onSpeakStart, onMouthPulse, onSpeakEnd } = options
+  // Ref pattern: keeps callbacks always current without triggering re-renders
+  const optionsRef = useRef(options)
+  optionsRef.current = options
 
   const [isEvaluating, setIsEvaluating] = useState(false)
   const [evalResult, setEvalResult] = useState<EvalResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
 
-  /** Crea y lanza un utterance con lip-sync conectado */
-  const buildAndSpeak = useCallback(
-    (text: string, onEnd?: () => void) => {
-      if (!('speechSynthesis' in window)) {
-        onSpeakEnd()
-        return
+  // Stable reference — reads latest callbacks from ref, never goes stale
+  const buildAndSpeak = useCallback((text: string, onEnd?: () => void) => {
+    const { onSpeakStart, onMouthPulse, onSpeakEnd } = optionsRef.current
+    if (!('speechSynthesis' in window)) { onSpeakEnd(); return }
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'es-ES'
+    utterance.rate = 0.92
+    utterance.pitch = 1.05
+    const applyVoice = () => {
+      const voice = getBestSpanishVoice()
+      if (voice) utterance.voice = voice
+    }
+    applyVoice()
+    if (!utterance.voice) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        applyVoice()
+        window.speechSynthesis.onvoiceschanged = null
       }
+    }
+    utteranceRef.current = utterance
+    utterance.onstart = () => { onSpeakStart() }
+    utterance.onboundary = (event) => { if (event.name === 'word') onMouthPulse() }
+    utterance.onend = () => { onSpeakEnd(); onEnd?.() }
+    utterance.onerror = () => { onSpeakEnd() }
+    window.speechSynthesis.speak(utterance)
+  }, []) // intentionally empty — stability via optionsRef
 
-      window.speechSynthesis.cancel()
+  const speak = useCallback((text: string) => { buildAndSpeak(text) }, [buildAndSpeak])
 
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.lang = 'es-ES'
-      utterance.rate = 0.92
-      utterance.pitch = 1.05
-
-      // Asigna la mejor voz disponible; en Chrome las voces pueden no estar
-      // cargadas aún, así que re-intentamos después de voiceschanged.
-      const applyVoice = () => {
-        const voice = getBestSpanishVoice()
-        if (voice) utterance.voice = voice
-      }
-      applyVoice()
-      if (!utterance.voice) {
-        window.speechSynthesis.onvoiceschanged = () => {
-          applyVoice()
-          window.speechSynthesis.onvoiceschanged = null
-        }
-      }
-
-      utteranceRef.current = utterance
-
-      utterance.onstart = () => { onSpeakStart() }
-      utterance.onboundary = (event) => {
-        if (event.name === 'word') onMouthPulse()
-      }
-      utterance.onend = () => {
-        onSpeakEnd()
-        onEnd?.()
-      }
-      utterance.onerror = () => { onSpeakEnd() }
-
-      window.speechSynthesis.speak(utterance)
-    },
-    [onMouthPulse, onSpeakEnd, onSpeakStart],
-  )
-
-  /** Habla texto libremente (ej: enunciar una pregunta) */
-  const speak = useCallback(
-    (text: string) => { buildAndSpeak(text) },
-    [buildAndSpeak],
-  )
-
-  /** Cancela cualquier síntesis en curso */
   const cancelSpeak = useCallback(() => {
     window.speechSynthesis.cancel()
-    onSpeakEnd()
-  }, [onSpeakEnd])
+    optionsRef.current.onSpeakEnd()
+  }, [])
 
   const evaluarRespuesta = useCallback(
     async (pregunta: string, respuesta: string) => {
       setIsEvaluating(true)
       setError(null)
-      onAnimacion('pensar')
-
+      optionsRef.current.onAnimacion('pensar')
       try {
         const result = await httpRequest<EvalResponse>('/api/v1/eval/evaluar', {
           method: 'POST',
           body: JSON.stringify({ pregunta, respuesta }),
         })
-
-        const VALID_STATES: AnimacionEstado[] = [
-          'idle', 'hablar', 'celebrar', 'corregir', 'animar', 'pensar',
-        ]
-        const animacion: AnimacionEstado = VALID_STATES.includes(result.animacion)
-          ? result.animacion
-          : 'hablar'
-
+        // Decidir animacion según resultado: celebrar si correcto y puntaje alto, corregir si no
+        const animacion: AnimacionEstado = (result.correcto && result.puntaje >= 70)
+          ? 'celebrar' : 'corregir'
         setEvalResult({ ...result, animacion })
-        onAnimacion(animacion)
-
+        optionsRef.current.onAnimacion(animacion)
         buildAndSpeak(result.feedback, () => {
-          if (['celebrar', 'corregir', 'animar'].includes(animacion)) {
-            onAnimacion('idle')
-          }
+          if (['celebrar', 'corregir', 'animar'].includes(animacion))
+            optionsRef.current.onAnimacion('idle')
         })
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Error al evaluar la respuesta.'
         setError(message)
-        onAnimacion('idle')
-        onSpeakEnd()
+        optionsRef.current.onAnimacion('idle')
+        optionsRef.current.onSpeakEnd()
       } finally {
         setIsEvaluating(false)
       }
     },
-    [buildAndSpeak, onAnimacion, onSpeakEnd],
+    [buildAndSpeak],
   )
 
   return { evaluarRespuesta, speak, cancelSpeak, isEvaluating, evalResult, error }
