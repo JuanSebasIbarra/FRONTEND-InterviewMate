@@ -59,14 +59,11 @@ export type AvatarCanvasProps = AvatarSceneProps & {
 }
 
 export function AvatarCanvas({
-  animacion = 'idle',
-  isSpeaking = false,
-  onReady,
-  onError,
-  onControllerReady,
+  avatarState = 'idle',
   interviewerName = 'Entrevistador IA',
+  modelUrl = '/models/avatar_1776746364480.glb',
 }: AvatarCanvasProps) {
-  const isActive = animacion === 'hablar' || isSpeaking
+  const isActive = avatarState === 'talking'
 
   return (
     <div
@@ -79,7 +76,7 @@ export function AvatarCanvas({
         backgroundPosition: 'center',
       }}
     >
-      <AvatarErrorBoundary onError={onError}>
+      <AvatarErrorBoundary>
         <Suspense fallback={<AvatarSkeleton />}>
           <Canvas
             camera={{ position: [0, 1.2, 2.8], fov: 45, near: 0.1, far: 100 }}
@@ -96,11 +93,9 @@ export function AvatarCanvas({
             <pointLight position={[0, 2.1, -1.8]} intensity={0.52} color="#87a5d6" />
 
             <AvatarScene
-              animacion={animacion}
-              isSpeaking={isSpeaking}
-              onReady={onReady}
-              onError={onError}
-              onControllerReady={onControllerReady}
+              avatarState={avatarState}
+              interviewerName={interviewerName}
+              modelUrl={modelUrl}
             />
           </Canvas>
         </Suspense>
@@ -122,7 +117,7 @@ export function AvatarCanvas({
           <span>{interviewerName}</span>
         </div>
         <span className="text-[0.72rem] uppercase tracking-[0.08em] text-[#c5ccdf]">
-          {animacion}
+          {avatarState}
         </span>
       </div>
     </div>

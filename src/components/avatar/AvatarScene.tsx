@@ -4,7 +4,7 @@ import { Canvas } from '@react-three/fiber'
 import { AvatarGLB, type AvatarState } from '../AvatarGLB'
 import avatarBg from '../../assets/avatar-background.png'
 
-type AvatarSceneProps = {
+export type AvatarSceneProps = {
   avatarState?: AvatarState
   interviewerName?: string
   modelUrl?: string
