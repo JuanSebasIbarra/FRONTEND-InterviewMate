@@ -73,16 +73,6 @@ function MicrophoneIcon({ muted = false }: { muted?: boolean }) {
   )
 }
 
-function CameraIcon({ off = false }: { off?: boolean }) {
-  return (
-    <svg className="h-[21px] w-[21px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M15 10.5 20 7v10l-5-3.5" />
-      <rect x="3" y="6" width="12" height="12" rx="2" />
-      {off ? <path d="M4 4l16 16" /> : null}
-    </svg>
-  )
-}
-
 function NextIcon() {
   return (
     <svg className="h-[21px] w-[21px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -137,10 +127,6 @@ function InterviewLivePage() {
   const [isQuestionIntroActive, setIsQuestionIntroActive] = useState(true)
   const [userAvatarUrl, setUserAvatarUrl] = useState('')
   const [userDisplayName, setUserDisplayName] = useState('Candidato')
-  const [isSelfViewVisible, setIsSelfViewVisible] = useState(true)
-  const [avatarAnimacion, setAvatarAnimacion] = useState<AnimacionEstado>('idle')
-  const [avatarSpeaking, setAvatarSpeaking] = useState(false)
-  const avatarMouthPulseRef = useRef<(() => void) | null>(null)
 
   const speechRecognitionSupported = Boolean(
     window.SpeechRecognition || window.webkitSpeechRecognition,
@@ -542,12 +528,8 @@ function InterviewLivePage() {
     <div className="flex h-screen flex-col text-[#f4f6fb] [background:radial-gradient(circle_at_top_left,rgba(224,123,57,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(120,170,255,0.1),transparent_24%),#1a1a2e]">
       <header className="flex h-16 items-center border-b border-[#33384b] bg-[rgba(31,31,58,0.92)] px-4 backdrop-blur-md max-[760px]:h-auto max-[760px]:flex-col max-[760px]:items-start max-[760px]:gap-2 max-[760px]:px-3 max-[760px]:py-2.5">
         <div className="min-w-0">
-          <img
-            src={interviewMateLogo}
-            alt="InterviewMate"
-            className="h-auto w-full max-w-[170px] rounded-md bg-white/90 p-1 object-contain"
-          />
-          <div className="mt-1 text-[0.85rem] text-[#a8afc3]">Entrevista en progreso · Duracion {callDurationLabel}</div>
+          <div className="truncate font-bold tracking-[0.01em]">InterviewMate - Entrevista en progreso</div>
+          <div className="text-[0.85rem] text-[#a8afc3]">Duracion {callDurationLabel}</div>
         </div>
       </header>
 
@@ -558,22 +540,15 @@ function InterviewLivePage() {
               <p>Cargando entrevista...</p>
             </div>
           ) : (
-            <AvatarCanvas
-              animacion={avatarAnimacion}
-              isSpeaking={avatarSpeaking}
-              interviewerName="Entrevistador IA"
-              onControllerReady={handleControllerReady}
+            <AvatarScene
+              avatarState={avatarState}
+              interviewerName="InterviewMate"
+              modelUrl="/models/avatar_1776746364480.glb"
             />
           )}
 
-          <div className="absolute bottom-4 left-4 z-[5] rounded-md bg-black/62 px-2.5 py-1 text-sm max-[760px]:bottom-2.5 max-[760px]:left-2.5 max-[760px]:text-xs">
-            Entrevistador IA
-          </div>
-
           <div
-            className={`${
-              isSelfViewVisible ? 'flex' : 'hidden'
-            } absolute bottom-4 right-4 z-[6] h-[120px] w-[180px] overflow-hidden rounded-[10px] border-2 border-white/30 bg-[#0a0a1a] max-[760px]:top-3 max-[760px]:bottom-auto max-[760px]:right-3 max-[760px]:h-[60px] max-[760px]:w-[90px]`}
+            className="absolute bottom-4 right-4 z-[6] flex h-[120px] w-[180px] overflow-hidden rounded-[10px] border-2 border-white/30 bg-[#0a0a1a] max-[760px]:top-3 max-[760px]:bottom-auto max-[760px]:right-3 max-[760px]:h-[60px] max-[760px]:w-[90px]"
           >
             {userAvatarUrl ? (
               <img src={userAvatarUrl} alt={userDisplayName} className="block h-full w-full object-cover" />
@@ -621,10 +596,36 @@ function InterviewLivePage() {
                   [questionKey]: value,
                 }))
               }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault()
+                  if (currentTypedAnswer.trim() && !isSavingAnswer && !isFinishingSession && !isLoading) {
+                    void goToNextQuestion()
+                  }
+                }
+              }}
               rows={4}
               placeholder="Tambien puedes responder escribiendo aqui..."
               className="mt-2 w-full resize-y rounded-lg border border-white/20 bg-[#0d1222] p-2.5 text-[0.92rem] text-[#f4f6fb] outline-none transition focus:border-[rgba(224,123,57,0.75)] focus:shadow-[0_0_0_2px_rgba(224,123,57,0.2)]"
             />
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <p className="text-[0.72rem] text-[#6b7a99]">Enter para enviar · Shift+Enter nueva l&iacute;nea</p>
+              <button
+                type="button"
+                onClick={() => void goToNextQuestion()}
+                disabled={isLoading || isSavingAnswer || isFinishingSession}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#e07b39] px-3 py-1.5 text-[0.82rem] font-medium text-white transition hover:bg-[#d46f2f] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {isSavingAnswer || isFinishingSession ? (
+                  <>
+                    <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="32" strokeDashoffset="12" />
+                    </svg>
+                    Guardando...
+                  </>
+                ) : nextButtonLabel}
+              </button>
+            </div>
           </section>
 
           {errorMessage && (
@@ -646,16 +647,6 @@ function InterviewLivePage() {
           </div>
 
           <div className="flex items-stretch max-[760px]:w-[calc(100%-56px)] max-[760px]:flex-1">
-            <button
-              type="button"
-              onClick={() => setIsSelfViewVisible((prev) => !prev)}
-              className={`${dockButtonClass} ${!isSelfViewVisible ? 'bg-white/8' : ''}`}
-              aria-label={isSelfViewVisible ? 'Ocultar vista propia' : 'Mostrar vista propia'}
-              title={isSelfViewVisible ? 'Ocultar vista propia' : 'Mostrar vista propia'}
-            >
-              <CameraIcon off={!isSelfViewVisible} />
-            </button>
-
             <button
               type="button"
               onClick={toggleRecording}
@@ -708,19 +699,6 @@ function InterviewLivePage() {
               : 'Controles de llamada listos'}
         </div>
 
-        <button
-          type="button"
-          onClick={() => openExitModal('stop')}
-          className="inline-flex min-w-0 items-center gap-3 rounded-full border border-[rgba(196,43,28,0.65)] bg-[#c42b1c] px-[18px] py-2.5 text-[0.9rem] text-white transition hover:brightness-105"
-        >
-          <span className="inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-white/12">
-            <HangupIcon />
-          </span>
-          <span className="flex flex-col items-start text-left">
-            <strong className="text-[0.92rem] font-bold">Finalizar</strong>
-            <small className="text-[0.76rem] text-[rgba(255,237,237,0.82)]">Salir de la llamada</small>
-          </span>
-        </button>
       </footer>
 
       {isExitModalOpen && (

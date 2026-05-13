@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import InterviewMateIcon from '../assets/interviewmate-logo.svg'
 import LoggedUserMenu from '../components/dashboard/LoggedUserMenu'
 import InterviewMateLogo from '../assets/interviewmate-main-logo.png'
 import { clearAuthToken } from '../lib/auth'
@@ -211,9 +212,9 @@ function SettingsPage() {
           width: 190px;
           max-width: 100%;
         }
-        .st-brand img {
-          width: 100%;
-          height: auto;
+        .st-brand-logo {
+          width: 28px;
+          height: 28px;
           object-fit: contain;
         }
         .st-topbar-right {
@@ -544,7 +545,8 @@ function SettingsPage() {
       <div className="st-root st">
         <div className="st-topbar">
           <div className="st-brand" onClick={() => navigate('/dashboard')}>
-            <img src={InterviewMateLogo} alt="InterviewMate" />
+            <img src={InterviewMateIcon} alt="InterviewMate logo" className="st-brand-logo" />
+            InterviewMate
           </div>
           <div className="st-topbar-right">
             <button type="button" className="st-back" onClick={() => navigate('/dashboard')}>

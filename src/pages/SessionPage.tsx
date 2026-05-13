@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import SessionHistoryCard from '../components/SessionHistoryCard'
+import StudyTopicModal from '../components/StudyTopicModal'
 import DashboardSidebar from '../components/dashboard/DashboardSidebar'
 import { clearAuthToken } from '../lib/auth'
 import type { InterviewSession, InterviewTemplate } from '../models/interview'
@@ -41,6 +42,7 @@ function SessionPage() {
   const [isCreatingInterview, setIsCreatingInterview] = useState(false)
   const [isCreatingStudy, setIsCreatingStudy] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [isStudyTopicModalOpen, setIsStudyTopicModalOpen] = useState(false)
   const didAutoStartStudyRef = useRef(false)
 
   useEffect(() => {
@@ -97,7 +99,7 @@ function SessionPage() {
 
     didAutoStartStudyRef.current = true
     navigate(`/sessions/${templateId}`, { replace: true })
-    void handleStartStudy()
+    setIsStudyTopicModalOpen(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateId, searchParams])
 
@@ -127,16 +129,22 @@ function SessionPage() {
     }
   }
 
-  const handleStartStudy = async () => {
+  const handleOpenStudyModal = () => {
+    if (!templateId || isCreatingStudy) return
+    setIsStudyTopicModalOpen(true)
+  }
+
+  const handleStartStudy = async (topic: string) => {
     if (!templateId || isCreatingStudy) return
 
+    setIsStudyTopicModalOpen(false)
     setIsCreatingStudy(true)
     setErrorMessage('')
 
     try {
       const studySession = await startStudy({
         templateId,
-        topic: template?.position,
+        topic,
       })
       navigate(`/sessions/${studySession.id}/study`, { replace: true })
     } catch (error) {
@@ -156,6 +164,36 @@ function SessionPage() {
 
   return (
     <div className="h-screen w-screen bg-stone-100 flex">
+      {isCreatingStudy && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-stone-100/95 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-5 text-center px-6">
+            <div className="relative flex items-center justify-center">
+              <div className="h-16 w-16 animate-spin rounded-full border-4 border-zinc-200 border-t-zinc-700" />
+              <span className="absolute text-xl">✦</span>
+            </div>
+            <div>
+              <p className="font-serif text-2xl font-normal tracking-[-0.02em] text-zinc-900">
+                La IA está generando tus preguntas
+              </p>
+              <p className="mt-2 text-sm text-zinc-500">
+                Analizando el tema y preparando una sesión personalizada...
+              </p>
+            </div>
+            <div className="flex gap-2 mt-2">
+              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">Dificultad adaptada</span>
+              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">Preguntas únicas</span>
+              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">Personalizadas para ti</span>
+            </div>
+          </div>
+        </div>
+      )}
+      <StudyTopicModal
+        isOpen={isStudyTopicModalOpen}
+        templatePosition={template?.position ?? ''}
+        isLoading={isCreatingStudy}
+        onConfirm={handleStartStudy}
+        onClose={() => setIsStudyTopicModalOpen(false)}
+      />
       <DashboardSidebar
           onLogout={handleLogout}
         />
@@ -178,7 +216,7 @@ function SessionPage() {
                 </h2>
                 <button
                   type="button"
-                  onClick={handleStartStudy}
+                  onClick={handleOpenStudyModal}
                   disabled={!templateId || isCreatingStudy}
                   className="rounded-full bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white transition hover:opacity-80"
                 >
