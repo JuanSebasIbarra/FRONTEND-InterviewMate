@@ -11,9 +11,36 @@ type StudyAnswer = {
   answer: string
 }
 
+type StudyDifficulty = 'BASIC' | 'INTERMEDIATE' | 'ADVANCED'
+type StudyQuestionType = 'THEORETICAL' | 'PRACTICAL'
+
 type StudyQuestion = {
   id: string
   text: string
+  difficulty: StudyDifficulty
+  type: StudyQuestionType
+}
+
+const DIFFICULTY_LABEL: Record<StudyDifficulty, string> = {
+  BASIC: 'Básico',
+  INTERMEDIATE: 'Intermedio',
+  ADVANCED: 'Avanzado',
+}
+
+const DIFFICULTY_CLASS: Record<StudyDifficulty, string> = {
+  BASIC: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  INTERMEDIATE: 'bg-amber-50 text-amber-700 border-amber-200',
+  ADVANCED: 'bg-red-50 text-red-700 border-red-200',
+}
+
+const TYPE_LABEL: Record<StudyQuestionType, string> = {
+  THEORETICAL: 'Teórico',
+  PRACTICAL: 'Práctico',
+}
+
+const TYPE_CLASS: Record<StudyQuestionType, string> = {
+  THEORETICAL: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  PRACTICAL: 'bg-violet-50 text-violet-700 border-violet-200',
 }
 
 function StudyPage() {
@@ -30,6 +57,9 @@ function StudyPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
   const [validationMessage, setValidationMessage] = useState('')
+
+  // — Intro screen before starting questions
+  const [showIntro, setShowIntro] = useState(true)
 
   useEffect(() => {
     if (!sessionId) {
@@ -53,6 +83,8 @@ function StudyPage() {
           .map((question) => ({
             id: question.id,
             text: question.questionText,
+            difficulty: question.difficulty,
+            type: question.type,
           }))
 
         setSessionTitle(studySession.topic || 'Sesion de estudio')
@@ -266,6 +298,111 @@ function StudyPage() {
     )
   }
 
+  if (showIntro) {
+    const basicCount = questions.filter((q) => q.difficulty === 'BASIC').length
+    const intermediateCount = questions.filter((q) => q.difficulty === 'INTERMEDIATE').length
+    const advancedCount = questions.filter((q) => q.difficulty === 'ADVANCED').length
+    const theoreticalCount = questions.filter((q) => q.type === 'THEORETICAL').length
+    const practicalCount = questions.filter((q) => q.type === 'PRACTICAL').length
+
+    return (
+      <div className="flex h-screen w-screen flex-col bg-stone-100">
+        <header className="border-b border-zinc-300 bg-stone-50 px-6 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-zinc-500">Sesión de estudio</p>
+              <h1 className="mt-1 font-serif text-2xl font-normal tracking-[-0.02em] text-zinc-900">
+                {sessionTitle}
+              </h1>
+            </div>
+            <button
+              type="button"
+              onClick={handleExit}
+              className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm text-zinc-600 transition hover:bg-zinc-50"
+            >
+              ← Volver
+            </button>
+          </div>
+        </header>
+
+        <div className="flex flex-1 items-center justify-center overflow-y-auto p-6">
+          <div className="w-full max-w-2xl space-y-4">
+            {/* Header card */}
+            <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs text-zinc-400">✦ IA</span>
+                <span className="text-xs uppercase tracking-widest text-zinc-400">Sesión generada por IA</span>
+              </div>
+              <h2 className="font-serif text-2xl font-normal tracking-[-0.02em] text-zinc-900 mt-1">
+                Tu sesión está lista
+              </h2>
+              <p className="mt-2 text-sm text-zinc-500 leading-relaxed">
+                La IA generó <span className="font-medium text-zinc-700">{questions.length} preguntas</span> personalizadas
+                para el tema <span className="font-medium text-zinc-700">"{sessionTitle}"</span>. Respóndelas a tu ritmo usando voz o texto.
+              </p>
+            </div>
+
+            {/* Difficulty breakdown */}
+            <div className="rounded-xl border border-zinc-200 bg-white p-5">
+              <p className="mb-3 text-xs font-medium uppercase tracking-widest text-zinc-400">
+                Distribución de dificultad
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {basicCount > 0 && (
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                    {basicCount} Básic{basicCount === 1 ? 'a' : 'as'}
+                  </span>
+                )}
+                {intermediateCount > 0 && (
+                  <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+                    {intermediateCount} Intermedi{intermediateCount === 1 ? 'a' : 'as'}
+                  </span>
+                )}
+                {advancedCount > 0 && (
+                  <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700">
+                    {advancedCount} Avanzad{advancedCount === 1 ? 'a' : 'as'}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Type breakdown */}
+            <div className="grid grid-cols-2 gap-4">
+              {theoreticalCount > 0 && (
+                <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-5">
+                  <p className="mb-1 text-xs font-medium uppercase tracking-widest text-indigo-400">Teóricas</p>
+                  <p className="font-serif text-3xl font-normal text-indigo-700">{theoreticalCount}</p>
+                  <p className="mt-1 text-xs text-indigo-500">preguntas conceptuales</p>
+                </div>
+              )}
+              {practicalCount > 0 && (
+                <div className="rounded-xl border border-violet-100 bg-violet-50 p-5">
+                  <p className="mb-1 text-xs font-medium uppercase tracking-widest text-violet-400">Prácticas</p>
+                  <p className="font-serif text-3xl font-normal text-violet-700">{practicalCount}</p>
+                  <p className="mt-1 text-xs text-violet-500">preguntas de aplicación</p>
+                </div>
+              )}
+            </div>
+
+            {/* CTA */}
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-xs text-zinc-400">
+                {questions.length} preguntas · Generadas por Gemini AI
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowIntro(false)}
+                className="rounded-full bg-zinc-900 px-8 py-3 text-sm font-medium text-white transition hover:opacity-85"
+              >
+                Comenzar sesión →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-screen w-screen flex-col bg-stone-100">
       <ExitConfirmModal
@@ -322,11 +459,16 @@ function StudyPage() {
                         <p className="line-clamp-2 text-xs leading-tight text-zinc-700">
                           {question.text}
                         </p>
-                        {isAnswered && (
-                          <span className="mt-1 inline-block rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
-                            Respondida
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          <span className={`inline-block rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${DIFFICULTY_CLASS[question.difficulty]}`}>
+                            {DIFFICULTY_LABEL[question.difficulty]}
                           </span>
-                        )}
+                          {isAnswered && (
+                            <span className="inline-block rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+                              Respondida
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </button>
@@ -340,9 +482,20 @@ function StudyPage() {
           <div className="flex-1 overflow-y-auto p-6">
             <div className="mx-auto max-w-2xl">
               <div className="mb-8 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-                <p className="mb-2 text-xs uppercase tracking-widest text-zinc-400">
-                  Pregunta {currentQuestionIndex + 1} de {questions.length}
-                </p>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-xs uppercase tracking-widest text-zinc-400">
+                    Pregunta {currentQuestionIndex + 1} de {questions.length}
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-zinc-400 mr-0.5">✦ IA</span>
+                    <span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${DIFFICULTY_CLASS[currentQuestion.difficulty]}`}>
+                      {DIFFICULTY_LABEL[currentQuestion.difficulty]}
+                    </span>
+                    <span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${TYPE_CLASS[currentQuestion.type]}`}>
+                      {TYPE_LABEL[currentQuestion.type]}
+                    </span>
+                  </div>
+                </div>
                 <h2 className="font-serif text-2xl font-normal tracking-[-0.02em] text-zinc-900">
                   {currentQuestion.text}
                 </h2>

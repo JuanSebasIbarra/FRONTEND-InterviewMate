@@ -27,12 +27,12 @@ export function AvatarScene({
       }}
     >
       <Canvas
-        camera={{ position: [0, 1.6, 2.2], fov: 40, near: 0.1, far: 100 }}
+        camera={{ position: [0, 0.72, 2.85], fov: 50, near: 0.1, far: 100 }}
         shadows
         gl={{ alpha: true, antialias: true }}
         style={{ background: 'transparent' }}
         onCreated={({ camera }) => {
-          camera.lookAt(0, 1.4, 0)
+          camera.lookAt(0, 0.55, 0)
         }}
       >
         <ambientLight intensity={0.8} />
@@ -61,20 +61,26 @@ export function AvatarScene({
       </Canvas>
 
       <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/65 to-transparent px-3.5 py-2.5"
+        className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/75 to-transparent px-4 py-3"
         aria-hidden
       >
-        <div className="flex items-center gap-2 text-[0.84rem]">
+        <div className="flex items-center gap-2">
           <span
-            className={`h-2 w-2 rounded-full ${
+            className={`h-2 w-2 shrink-0 rounded-full transition-colors ${
               isTalking
                 ? 'bg-[#f0a766] shadow-[0_0_10px_rgba(240,167,102,0.85)]'
-                : 'bg-[#7c859e]'
+                : 'bg-[#4ade80] shadow-[0_0_6px_rgba(74,222,128,0.55)]'
             }`}
           />
-          <span>{interviewerName}</span>
+          <span className="text-[0.88rem] font-semibold tracking-wide text-white">{interviewerName}</span>
         </div>
-        <span className="text-[0.72rem] uppercase tracking-[0.08em] text-[#c5ccdf]">{avatarState}</span>
+        <span
+          className={`rounded-full px-2.5 py-0.5 text-[0.65rem] font-medium uppercase tracking-widest ${
+            isTalking ? 'bg-[rgba(240,167,102,0.2)] text-[#f0a766]' : 'bg-white/10 text-white/55'
+          }`}
+        >
+          {avatarState}
+        </span>
       </div>
     </div>
   )
