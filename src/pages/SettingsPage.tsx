@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import InterviewMateIcon from '../assets/interviewmate-logo.svg'
 import LoggedUserMenu from '../components/dashboard/LoggedUserMenu'
+import InterviewMateLogo from '../assets/interviewmate-main-logo.png'
 import { clearAuthToken } from '../lib/auth'
 import {
   loadProfileData,
@@ -207,11 +208,9 @@ function SettingsPage() {
         .st-brand {
           display: flex;
           align-items: center;
-          gap: 8px;
-          font-size: 14px;
-          font-weight: 500;
-          color: #111;
           cursor: pointer;
+          width: 190px;
+          max-width: 100%;
         }
         .st-brand-logo {
           width: 28px;

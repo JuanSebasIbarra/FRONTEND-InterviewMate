@@ -1,13 +1,23 @@
-import { Suspense } from 'react'
-import { Environment, Html } from '@react-three/drei'
-import { Canvas } from '@react-three/fiber'
-import { AvatarGLB, type AvatarState } from '../AvatarGLB'
-import avatarBg from '../../assets/avatar-background.png'
+import { Suspense, useEffect, useMemo } from 'react'
+import { Environment, Html, useGLTF } from '@react-three/drei'
+import * as THREE from 'three'
+import { SkeletonUtils } from 'three-stdlib'
+import { useAvatarController } from './useAvatarController'
+import type { AnimacionEstado } from './AvatarController'
 
-type AvatarSceneProps = {
-  avatarState?: AvatarState
-  interviewerName?: string
-  modelUrl?: string
+const MODEL_URL = '/models/avatar_1776746364480.glb'
+
+// Precarga el GLB para que esté en caché cuando el Canvas monte
+useGLTF.preload(MODEL_URL)
+
+// ─── Mesh del avatar (dentro del Canvas) ─────────────────────────────────────
+
+type AvatarMeshProps = {
+  animacion: AnimacionEstado
+  isSpeaking: boolean
+  onReady?: () => void
+  /** Recibe la función triggerMouthPulse para llamarla desde fuera del Canvas */
+  onControllerReady?: (triggerMouthPulse: () => void) => void
 }
 
 export function AvatarScene({
@@ -51,14 +61,13 @@ export function AvatarScene({
         >
           <Environment preset="studio" />
 
-          <AvatarGLB
-            url={modelUrl}
-            scale={1}
-            position={[0, -0.8, 0]}
-            avatarState={avatarState}
-          />
-        </Suspense>
-      </Canvas>
+export type AvatarSceneProps = {
+  animacion?: AnimacionEstado
+  isSpeaking?: boolean
+  onReady?: () => void
+  onError?: (error: Error) => void
+  onControllerReady?: (triggerMouthPulse: () => void) => void
+}
 
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/75 to-transparent px-4 py-3"

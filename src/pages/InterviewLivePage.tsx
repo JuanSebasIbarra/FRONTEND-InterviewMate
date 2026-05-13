@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import AvatarScene from '../components/avatar/AvatarScene'
-import type { AvatarState } from '../components/AvatarGLB'
+import { AvatarCanvas } from '../components/avatar/AvatarCanvas'
+import type { AnimacionEstado } from '../components/avatar/AvatarController'
+import { useInterviewSession } from '../hooks/useInterviewSession'
+import interviewMateLogo from '../assets/interviewmate-main-logo.png'
 import { readLocalSettings } from '../controllers/settingsController'
 import {
   finishInterviewSession,
@@ -269,12 +271,43 @@ function InterviewLivePage() {
     }
   }, [questionKey])
 
-  const avatarState: AvatarState = useMemo(() => {
-    if (isSavingAnswer || isFinishingSession) return 'thinking'
-    if (isRecording) return 'listening'
-    if (isQuestionIntroActive) return 'talking'
+  const baseAvatarState: AnimacionEstado = useMemo(() => {
+    if (isSavingAnswer || isFinishingSession) return 'pensar'
+    if (isQuestionIntroActive) return 'hablar'
     return 'idle'
-  }, [isFinishingSession, isQuestionIntroActive, isRecording, isSavingAnswer])
+  }, [isFinishingSession, isQuestionIntroActive, isSavingAnswer])
+
+  useEffect(() => {
+    setAvatarAnimacion(baseAvatarState)
+  }, [baseAvatarState])
+
+  const { speak, cancelSpeak } = useInterviewSession({
+    onAnimacion: useCallback((a: AnimacionEstado) => setAvatarAnimacion(a), []),
+    onSpeakStart: useCallback(() => setAvatarSpeaking(true), []),
+    onMouthPulse: useCallback(() => avatarMouthPulseRef.current?.(), []),
+    onSpeakEnd: useCallback(() => setAvatarSpeaking(false), []),
+  })
+
+  // Habla la pregunta cuando el intro del avatar se activa
+  useEffect(() => {
+    if (isQuestionIntroActive && !isLoading && currentQuestionText) {
+      setAvatarAnimacion('hablar')
+      speak(currentQuestionText)
+    }
+  }, [isQuestionIntroActive, isLoading, currentQuestionText, speak])
+
+  // Cancela la síntesis si el usuario abandona la página
+  useEffect(() => {
+    return () => { cancelSpeak() }
+  }, [cancelSpeak])
+
+  // Wire triggerMouthPulse desde el controlador del canvas hacia el hook de voz
+  const handleControllerReady = useCallback(
+    (triggerMouthPulse: () => void) => {
+      avatarMouthPulseRef.current = triggerMouthPulse
+    },
+    [],
+  )
 
   const callDurationLabel = useMemo(() => {
     const hours = Math.floor(elapsedSeconds / 3600)
