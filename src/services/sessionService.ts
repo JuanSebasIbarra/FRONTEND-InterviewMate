@@ -22,6 +22,12 @@ export function completeSession(sessionId: string) {
   })
 }
 
+export function abandonSession(sessionId: string) {
+  return httpRequest<InterviewSession>(`/api/v1/sessions/${sessionId}/abandon`, {
+    method: 'PATCH',
+  })
+}
+
 export function getSessionById(sessionId: string) {
   return httpRequest<InterviewSession>(`/api/v1/sessions/${sessionId}`)
 }
@@ -34,7 +40,9 @@ export function getMySessions() {
   return getMySessionsPage().then((response) => response.data)
 }
 
-export async function getMySessionsPage(): Promise<PageData<InterviewSession>> {
-  const response = await httpRequest<PageResponse<InterviewSession> | InterviewSession[]>('/api/v1/sessions/me')
+export async function getMySessionsPage(page = 0, size = 20): Promise<PageData<InterviewSession>> {
+  const response = await httpRequest<PageResponse<InterviewSession> | InterviewSession[]>(
+    `/api/v1/sessions/me?page=${page}&size=${size}`,
+  )
   return extractPageData<InterviewSession>(response)
 }
