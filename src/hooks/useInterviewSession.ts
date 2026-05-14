@@ -1,5 +1,4 @@
 import { useCallback, useRef, useState } from 'react'
-import { httpRequest } from '../services/httpClient'
 
 export type AnimacionEstado = 'idle' | 'hablar' | 'celebrar' | 'corregir' | 'animar' | 'pensar'
 
@@ -18,7 +17,7 @@ type UseInterviewSessionOptions = {
 }
 
 type UseInterviewSessionResult = {
-  evaluarRespuesta: (pregunta: string, respuesta: string) => Promise<void>
+  evaluarRespuesta: (feedback: string, score: number) => Promise<void>
   speak: (text: string) => void
   cancelSpeak: () => void
   isEvaluating: boolean
@@ -85,21 +84,19 @@ export function useInterviewSession(options: UseInterviewSessionOptions): UseInt
   }, [])
 
   const evaluarRespuesta = useCallback(
-    async (pregunta: string, respuesta: string) => {
+    async (feedback: string, score: number) => {
       setIsEvaluating(true)
       setError(null)
       optionsRef.current.onAnimacion('pensar')
       try {
-        const result = await httpRequest<EvalResponse>('/api/v1/eval/evaluar', {
-          method: 'POST',
-          body: JSON.stringify({ pregunta, respuesta }),
-        })
-        // Decidir animacion según resultado: celebrar si correcto y puntaje alto, corregir si no
-        const animacion: AnimacionEstado = (result.correcto && result.puntaje >= 70)
-          ? 'celebrar' : 'corregir'
-        setEvalResult({ ...result, animacion })
+        // La evaluación ya fue realizada por el backend al enviar la respuesta.
+        // Aquí solo se sintetiza el feedback de IA y se decide la animación.
+        const correcto = score >= 70
+        const animacion: AnimacionEstado = correcto ? 'celebrar' : 'corregir'
+        const result: EvalResponse = { correcto, puntaje: score, feedback, animacion }
+        setEvalResult(result)
         optionsRef.current.onAnimacion(animacion)
-        buildAndSpeak(result.feedback, () => {
+        buildAndSpeak(feedback, () => {
           if (['celebrar', 'corregir', 'animar'].includes(animacion))
             optionsRef.current.onAnimacion('idle')
         })
