@@ -43,6 +43,10 @@ const TYPE_CLASS: Record<StudyQuestionType, string> = {
   PRACTICAL: 'bg-violet-50 text-violet-700 border-violet-200',
 }
 
+// Audio transcription is not available with the current AI provider (google-gemini).
+// Set to true if the backend switches to a provider that supports transcribe.
+const TRANSCRIBE_ENABLED = false
+
 function StudyPage() {
   const navigate = useNavigate()
   const { sessionId } = useParams<{ sessionId: string }>()
@@ -502,10 +506,12 @@ function StudyPage() {
               </div>
 
               <div className="space-y-6">
-                <div className="flex flex-col items-center gap-4">
-                  <p className="text-sm text-zinc-600">Responde con voz o escribiendo en el campo</p>
-                  <MicrophoneButton onTranscript={handleMicrophoneTranscript} />
-                </div>
+                {TRANSCRIBE_ENABLED && (
+                  <div className="flex flex-col items-center gap-4">
+                    <p className="text-sm text-zinc-600">Responde con voz o escribiendo en el campo</p>
+                    <MicrophoneButton onTranscript={handleMicrophoneTranscript} />
+                  </div>
+                )}
 
                 <div className="rounded-xl border border-zinc-200 bg-stone-50 p-5">
                   <p className="mb-2 text-xs font-medium uppercase tracking-widest text-zinc-400">
