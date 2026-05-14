@@ -1,7 +1,7 @@
 import type { InterviewQuestion, InterviewResult, InterviewSession } from '../models/interview'
 import { getQuestionsBySession, submitAnswer } from '../services/questionService'
 import { getResultBySession } from '../services/resultService'
-import { completeSession, getSessionById } from '../services/sessionService'
+import { getSessionById } from '../services/sessionService'
 
 export type InterviewSessionData = {
   session: InterviewSession
@@ -29,10 +29,6 @@ export async function loadInterviewSessionData(sessionId: string): Promise<Inter
   }
 }
 
-export async function submitQuestionAnswer(questionId: string, answer: string) {
-  await submitAnswer(questionId, { answer })
-}
-
-export async function finishInterviewSession(sessionId: string) {
-  return completeSession(sessionId)
+export async function submitQuestionAnswer(questionId: string, answer: string): Promise<InterviewQuestion> {
+  return submitAnswer(questionId, { answer })
 }

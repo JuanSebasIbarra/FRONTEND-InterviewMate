@@ -72,12 +72,15 @@ export async function savePersonalInfo(payload: {
   avatarFile: File | null
   perfilProfesional: string
 }): Promise<SettingsData> {
-  await updateProfile({ perfilProfesional: payload.perfilProfesional })
-
   const current = readLocalSettings()
   const avatarDataUrl = payload.avatarFile
     ? await toDataUrl(payload.avatarFile)
     : current.avatarDataUrl
+
+  await updateProfile({
+    perfilProfesional: payload.perfilProfesional,
+    profilePictureUrl: avatarDataUrl || undefined,
+  })
 
   writeLocalSettings({
     firstName: payload.firstName,

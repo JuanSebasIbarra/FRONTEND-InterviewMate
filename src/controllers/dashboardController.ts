@@ -4,8 +4,10 @@ import type {
   InterviewSession,
   InterviewTemplate,
 } from '../models/interview'
+import type { DashboardStatsResponse } from '../models/api'
 import type { ProfileResponse, User } from '../models/auth'
 import { getMe } from '../services/authService'
+import { getDashboardStats } from '../services/dashboardService'
 import { getProfile } from '../services/profileService'
 import { getMyResults } from '../services/resultService'
 import { beginSession, createSession, getMySessions } from '../services/sessionService'
@@ -18,6 +20,7 @@ export type DashboardData = {
   results: InterviewResult[]
   sessions: InterviewSession[]
   latestResult: InterviewResult | null
+  stats: DashboardStatsResponse | null
 }
 
 function ensureArray<T>(value: unknown): T[] {
@@ -31,12 +34,13 @@ function orderResultsByDate(results: InterviewResult[]) {
 }
 
 export async function loadDashboardData(): Promise<DashboardData> {
-  const [userRes, profileRes, templatesRes, resultsRes, sessionsRes] = await Promise.allSettled([
+  const [userRes, profileRes, templatesRes, resultsRes, sessionsRes, statsRes] = await Promise.allSettled([
     getMe(),
     getProfile(),
     getMyTemplates(),
     getMyResults(),
     getMySessions(),
+    getDashboardStats(),
   ])
 
   const user = userRes.status === 'fulfilled' ? userRes.value : null
@@ -51,6 +55,7 @@ export async function loadDashboardData(): Promise<DashboardData> {
                 - new Date(a.startedAt ?? a.completedAt ?? 0).getTime(),
       )
     : []
+  const stats = statsRes.status === 'fulfilled' ? statsRes.value : null
 
   return {
     user,
@@ -59,6 +64,7 @@ export async function loadDashboardData(): Promise<DashboardData> {
     results,
     sessions,
     latestResult: results[0] ?? null,
+    stats,
   }
 }
 
