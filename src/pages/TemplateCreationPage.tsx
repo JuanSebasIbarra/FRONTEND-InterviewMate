@@ -10,6 +10,7 @@ type FieldKey =
 	| 'workingArea'
 	| 'description'
 	| 'requirements'
+	| 'goals'
 	| 'businessContext'
 
 type SpeechRecognitionLike = {
@@ -31,6 +32,7 @@ const FIELD_LABELS: Record<FieldKey, string> = {
 	workingArea: 'Working Area',
 	description: 'Description',
 	requirements: 'Requirements',
+	goals: 'Goals',
 	businessContext: 'Business Context',
 }
 
@@ -41,6 +43,7 @@ const DEFAULT_FORM = {
 	workingArea: '',
 	description: '',
 	requirements: '',
+	goals: '',
 	businessContext: '',
 }
 
@@ -199,6 +202,7 @@ function TemplateCreationPage() {
 				workingArea: formData.workingArea.trim() || undefined,
 				description: formData.description.trim() || undefined,
 				requirements: formData.requirements.trim() || undefined,
+				goals: formData.goals.trim() || undefined,
 				businessContext: formData.businessContext.trim() || undefined,
 			}
 
@@ -374,6 +378,18 @@ function TemplateCreationPage() {
 									onChange={(event) => updateField('requirements', event.target.value)}
 									className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
 									placeholder="Requisitos del perfil"
+								/>
+							</label>
+
+							<label className="block">
+								<span className="mb-2 block text-sm font-medium text-zinc-700">Goals</span>
+								<textarea
+									rows={4}
+									value={formData.goals}
+									onFocus={() => handleFieldFocus('goals')}
+									onChange={(event) => updateField('goals', event.target.value)}
+									className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
+									placeholder="Objetivos de la entrevista"
 								/>
 							</label>
 
