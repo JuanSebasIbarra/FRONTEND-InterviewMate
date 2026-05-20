@@ -88,17 +88,17 @@ function ResultsPage() {
         )
 
         try {
-          const generatedResult = await generateSessionReview(sessionId)
+          const existingResult = await getResultBySession(sessionId)
           if (!mounted) return
-          setResult(generatedResult)
+          setResult(existingResult)
         } catch {
           try {
-            const existingResult = await getResultBySession(sessionId)
+            const generatedResult = await generateSessionReview(sessionId)
             if (!mounted) return
-            setResult(existingResult)
+            setResult(generatedResult)
           } catch {
             if (!mounted) return
-            setErrorMessage('No se pudo generar el resultado de la entrevista.')
+            setErrorMessage('No se pudo cargar el resultado de la entrevista.')
           }
         }
       } catch {

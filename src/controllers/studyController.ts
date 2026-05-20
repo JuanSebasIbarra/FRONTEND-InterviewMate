@@ -1,7 +1,7 @@
 import type { InterviewSession, InterviewType } from '../models/interview'
 import type { StartStudyRequest, StudySession } from '../models/study'
 import { beginSession, createSession } from '../services/sessionService'
-import { generateStudyQuestions, getStudyById, startStudy } from '../services/studyService'
+import { getStudyById, startStudy } from '../services/studyService'
 import { createTemplate } from '../services/templateService'
 
 function normalizeOptionalText(value: string) {
@@ -24,10 +24,6 @@ export async function startStudySession(payload: {
   }
 
   return startStudy(request)
-}
-
-export function regenerateStudySessionQuestions(studySessionId: string): Promise<StudySession> {
-  return generateStudyQuestions({ studySessionId })
 }
 
 export function loadStudySession(studySessionId: string): Promise<StudySession> {

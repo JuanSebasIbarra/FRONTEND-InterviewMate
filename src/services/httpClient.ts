@@ -1,4 +1,4 @@
-import { getAuthToken } from '../lib/auth'
+import { getAuthToken, clearAuthToken } from '../lib/auth'
 import { buildApiUrl } from '../lib/api'
 import type { ApiErrorPayload, ApiResponse } from '../models/api'
 
@@ -48,10 +48,27 @@ function buildRequestHeaders(init?: RequestInit) {
   return headers
 }
 
+export class ApiError extends Error {
+  status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.status = status
+    this.name = 'ApiError'
+  }
+}
+
 async function throwHttpError(response: Response) {
   const raw = await response.text()
   const parsed = tryParseJson(raw)
-  throw new Error(extractErrorMessage(parsed, 'No se pudo completar la operación.'))
+
+  // Plain text error (e.g., POST /auth/register returns "User or email already exists")
+  if (!parsed && raw.trim()) {
+    throw new ApiError(raw.trim(), response.status)
+  }
+
+  const message = extractErrorMessage(parsed, 'No se pudo completar la operación.')
+  throw new ApiError(message, response.status)
 }
 
 export async function httpRequest<T>(path: string, init?: RequestInit): Promise<T> {
@@ -64,6 +81,11 @@ export async function httpRequest<T>(path: string, init?: RequestInit): Promise<
   })
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearAuthToken()
+      window.location.href = '/login'
+      throw new ApiError('Sesión expirada. Redirigiendo al inicio de sesión.', 401)
+    }
     await throwHttpError(response)
   }
 
@@ -72,7 +94,7 @@ export async function httpRequest<T>(path: string, init?: RequestInit): Promise<
 
   if (isWrappedResponse<T>(parsed)) {
     if (!parsed.success) {
-      throw new Error(parsed.message || 'La operación no fue exitosa.')
+      throw new ApiError(parsed.message || 'La operación no fue exitosa.', response.status)
     }
     return parsed.data
   }
@@ -90,6 +112,11 @@ export async function httpRequestBlob(path: string, init?: RequestInit): Promise
   })
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearAuthToken()
+      window.location.href = '/login'
+      throw new ApiError('Sesión expirada. Redirigiendo al inicio de sesión.', 401)
+    }
     await throwHttpError(response)
   }
 

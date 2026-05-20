@@ -13,7 +13,9 @@ import {
 } from '../lib/dashboardStats'
 import { getStudyModulesHistory } from '../lib/studyModulesHistory'
 import { formatTemplateLastActivity, sortTemplatesByRecentActivity } from '../lib/templateActivity'
+import type { DashboardStatsResponse } from '../models/api'
 import type { InterviewSession, InterviewTemplate } from '../models/interview'
+import { getDashboardStats } from '../services/dashboardService'
 import { getMySessions } from '../services/sessionService'
 import { deleteTemplate, getMyTemplates } from '../services/templateService'
 
@@ -32,6 +34,7 @@ function DashboardPage() {
   const [templatePendingDeletion, setTemplatePendingDeletion] = useState<InterviewTemplate | null>(null)
   const [isDeletingTemplate, setIsDeletingTemplate] = useState(false)
   const [dashboardSignInCount, setDashboardSignInCount] = useState(() => getDashboardSignInCount())
+  const [stats, setStats] = useState<DashboardStatsResponse | null>(null)
 
   const sortedTemplates = useMemo(() => sortTemplatesByRecentActivity(templates), [templates])
   const recentTemplates = useMemo(() => sortedTemplates.slice(0, 3), [sortedTemplates])
@@ -39,8 +42,10 @@ function DashboardPage() {
   const studyModulesHistory = useMemo(() => getStudyModulesHistory(), [])
 
   const dashboardStatsLinkedList = useMemo(() => {
-    const completedStudySessions = studyModulesHistory.filter((item) => item.completed).length
-    const interviewsDone = sessions.filter((session) => session.status === 'COMPLETED').length
+    const completedStudySessions = stats?.totalStudySessions
+      ?? studyModulesHistory.filter((item) => item.completed).length
+    const interviewsDone = stats?.totalInterviewSessionsCompleted
+      ?? sessions.filter((session) => session.status === 'COMPLETED').length
     const signInAndPractice = dashboardSignInCount
 
     return buildDashboardStatsLinkedList({
@@ -48,7 +53,7 @@ function DashboardPage() {
       interviewsDone,
       signInAndPractice,
     })
-  }, [dashboardSignInCount, sessions, studyModulesHistory])
+  }, [dashboardSignInCount, sessions, studyModulesHistory, stats])
 
   useEffect(() => {
     setDashboardSignInCount(incrementDashboardSignInCount())
@@ -60,13 +65,15 @@ function DashboardPage() {
       setErrorMessage('')
 
       try {
-        const [templatesPayload, sessionsPayload] = await Promise.all([
+        const [templatesPayload, sessionsPayload, statsPayload] = await Promise.all([
           getMyTemplates(),
           getMySessions(),
+          getDashboardStats(),
         ])
         if (!isMounted) return
         setTemplates(ensureArray<InterviewTemplate>(templatesPayload))
         setSessions(ensureArray<InterviewSession>(sessionsPayload))
+        setStats(statsPayload)
       } catch (error) {
         if (!isMounted) return
         const message = error instanceof Error ? error.message : 'No se pudieron cargar las plantillas.'

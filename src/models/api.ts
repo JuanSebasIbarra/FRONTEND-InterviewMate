@@ -10,6 +10,8 @@ export type PageResponse<T> = {
   totalPages: number
   size: number
   number: number
+  last?: boolean
+  first?: boolean
 }
 
 export type PageMeta = {
@@ -29,4 +31,13 @@ export type ApiErrorPayload = {
   error?: string
   fieldErrors?: Record<string, string>
   success?: boolean
+}
+
+export type DashboardStatsResponse = {
+  totalInterviewSessionsCompleted: number
+  avgInterviewScore: number
+  totalStudySessions: number
+  totalInterviewTemplates: number
+  lastInterviewSessionDate: string | null
+  lastStudySessionDate: string | null
 }

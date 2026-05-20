@@ -31,6 +31,8 @@ export type CreateInterviewTemplateRequest = {
   businessContext?: string
 }
 
+export type UpdateInterviewTemplateRequest = Partial<Omit<CreateInterviewTemplateRequest, 'type'>> & { type?: InterviewType }
+
 export type InterviewSession = {
   id: string
   attemptNumber: number
@@ -67,18 +69,17 @@ export type InterviewResult = {
   id: string
   sessionId: string
   attemptNumber: number
-  templateId?: string
-  enterprise?: string
-  position?: string
-  interviewType?: InterviewType
-  type?: InterviewType
-  generalFeedback?: string
-  strengths?: string
-  weaknesses?: string
-  totalScore?: number
+  templateId: string
+  enterprise: string
+  position: string
+  interviewType: InterviewType
+  generalFeedback: string
+  strengths: string
+  weaknesses: string
+  totalScore: number
   status: ResultStatus
-  aiModel?: string
-  totalTokensUsed?: number
+  aiModel: string
+  totalTokensUsed: number
   generatedAt: string
-  sessionStartedAt?: string
+  sessionStartedAt: string | null
 }

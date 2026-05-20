@@ -1,5 +1,7 @@
 export type Role = string
 
+export type AuthProvider = 'LOCAL' | 'GOOGLE'
+
 export type User = {
   id: number
   username: string
@@ -30,13 +32,19 @@ export type RegisterRequest = {
 }
 
 export type ProfileResponse = {
+  id: number
   username: string
   email: string
-  perfilProfesional: string
+  perfilProfesional: string | null
+  profilePictureUrl: string | null
+  authProvider: AuthProvider
   roles: string[]
   createdAt: string
 }
 
 export type UpdateProfileRequest = {
-  perfilProfesional: string
+  username?: string
+  email?: string
+  perfilProfesional?: string
+  profilePictureUrl?: string
 }

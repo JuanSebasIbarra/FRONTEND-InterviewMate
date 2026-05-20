@@ -5,7 +5,7 @@ import * as THREE from 'three'
 import type { Group } from 'three'
 import { SkeletonUtils } from 'three-stdlib'
 
-export type AvatarState = 'idle' | 'talking' | 'thinking' | 'listening'
+export type AvatarState = 'idle' | 'talking' | 'thinking' | 'listening' | 'celebrating' | 'correcting'
 
 type AvatarGLBProps = {
   url: string
@@ -45,12 +45,16 @@ export function AvatarGLB({
     const talking = byName([/talk/i, /speak/i, /gesture/i, /conversation/i])
     const thinking = byName([/think/i, /ponder/i, /scratch/i, /look/i])
     const listening = byName([/listen/i, /attentive/i, /attention/i])
+    const celebrating = byName([/celebrat/i, /happy/i, /cheer/i, /wave/i, /clap/i])
+    const correcting = byName([/correct/i, /reject/i, /disagree/i, /shak/i])
 
     return {
       idle,
       talking: talking ?? idle,
       thinking: thinking ?? idle,
       listening: listening ?? idle,
+      celebrating: celebrating ?? talking ?? idle,
+      correcting: correcting ?? thinking ?? idle,
     }
   }, [animations])
 

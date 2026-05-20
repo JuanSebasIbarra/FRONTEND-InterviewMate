@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import InterviewMateIcon from '../assets/interviewmate-logo.svg'
+import InterviewMateIcon from '../assets/interviewmate-main-logo.png'
 import LoggedUserMenu from '../components/dashboard/LoggedUserMenu'
-import InterviewMateLogo from '../assets/interviewmate-main-logo.png'
 import { clearAuthToken } from '../lib/auth'
 import {
   loadProfileData,

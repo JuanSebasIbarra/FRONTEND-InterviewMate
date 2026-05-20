@@ -6,9 +6,20 @@ import DashboardSidebar from '../components/dashboard/DashboardSidebar'
 import { clearAuthToken } from '../lib/auth'
 import type { InterviewSession, InterviewTemplate } from '../models/interview'
 import type { StudySessionSummary } from '../models/study'
+import { ApiError } from '../services/httpClient'
 import { beginSession, createSession, getSessionsByTemplate } from '../services/sessionService'
 import { getMyStudySessions, startStudy } from '../services/studyService'
 import { getTemplateById } from '../services/templateService'
+
+function getAiErrorMessage(error: unknown): string {
+  if (error instanceof ApiError && error.status === 503) {
+    return 'La generación de preguntas con IA falló. Por favor, inténtalo de nuevo más tarde.'
+  }
+  if (error instanceof Error) {
+    return error.message
+  }
+  return 'No se pudo completar la operación. Intenta nuevamente.'
+}
 
 function formatSessionDate(value?: string) {
   if (!value) return 'Sin fecha'
@@ -119,11 +130,7 @@ function SessionPage() {
       const activeSession = await beginSession(createdSession.id)
       navigate(`/sessions/${activeSession.id}/interview`, { replace: true })
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'No se pudo iniciar la entrevista. Intenta nuevamente.'
-      setErrorMessage(message)
+      setErrorMessage(getAiErrorMessage(error))
     } finally {
       setIsCreatingInterview(false)
     }
@@ -148,11 +155,7 @@ function SessionPage() {
       })
       navigate(`/sessions/${studySession.id}/study`, { replace: true })
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'No se pudo iniciar la sesion de estudio. Intenta nuevamente.'
-      setErrorMessage(message)
+      setErrorMessage(getAiErrorMessage(error))
     } finally {
       setIsCreatingStudy(false)
     }
@@ -164,6 +167,29 @@ function SessionPage() {
 
   return (
     <div className="h-screen w-screen bg-stone-100 flex">
+      {isCreatingInterview && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-stone-100/95 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-5 text-center px-6">
+            <div className="relative flex items-center justify-center">
+              <div className="h-16 w-16 animate-spin rounded-full border-4 border-zinc-200 border-t-zinc-700" />
+              <span className="absolute text-xl">✦</span>
+            </div>
+            <div>
+              <p className="font-serif text-2xl font-normal tracking-[-0.02em] text-zinc-900">
+                La IA está generando tus preguntas de entrevista
+              </p>
+              <p className="mt-2 text-sm text-zinc-500">
+                Analizando la plantilla y preparando preguntas personalizadas...
+              </p>
+            </div>
+            <div className="flex gap-2 mt-2">
+              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">Preguntas contextuales</span>
+              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">Evaluación por IA</span>
+              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">Personalizadas para ti</span>
+            </div>
+          </div>
+        </div>
+      )}
       {isCreatingStudy && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-stone-100/95 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-5 text-center px-6">
