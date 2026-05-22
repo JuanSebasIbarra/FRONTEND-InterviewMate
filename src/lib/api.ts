@@ -1,4 +1,4 @@
-const rawApiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
+const rawApiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8081'
 
 export const API_BASE_URL = rawApiUrl.replace(/\/$/, '')
 export const API_V1_PREFIX = '/api/v1'
