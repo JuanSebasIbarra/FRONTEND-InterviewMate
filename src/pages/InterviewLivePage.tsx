@@ -65,9 +65,9 @@ declare global {
 }
 
 const FALLBACK_QUESTIONS = [
-  'If Sasuke escapes from Konoha again what will you do?',
-  'Cuentame sobre un desafio tecnico dificil y como lo resolviste.',
-  'Como reaccionas cuando recibes feedback duro sobre tu trabajo?',
+  'Cuentame sobre un proyecto tecnico desafiante y como lo resolviste.',
+  'Como reaccionas cuando recibes feedback critico sobre tu trabajo?',
+  'Describe una situacion donde tuviste que aprender algo nuevo rapidamente.',
 ]
 
 function MicrophoneIcon({ muted = false }: { muted?: boolean }) {
@@ -261,9 +261,11 @@ function InterviewLivePage() {
   const questionKey = hasBackendQuestions
     ? questions[currentQuestionIndex]?.id ?? `q-${currentQuestionIndex}`
     : `fallback-${fallbackQuestionIndex}`
-  const currentQuestionText = hasBackendQuestions
-    ? questions[currentQuestionIndex]?.question ?? ''
-    : fallbackQuestion
+  const currentQuestionText = isLoading
+    ? 'Preparando preguntas...'
+    : hasBackendQuestions
+      ? questions[currentQuestionIndex]?.question ?? ''
+      : fallbackQuestion
   const currentEntries = answersByQuestion[questionKey] ?? []
   const currentTypedAnswer = typedAnswersByQuestion[questionKey] ?? ''
 

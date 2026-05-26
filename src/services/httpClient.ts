@@ -48,6 +48,10 @@ function buildRequestHeaders(init?: RequestInit) {
   return headers
 }
 
+function isAuthPath(path: string) {
+  return path.startsWith('/auth/')
+}
+
 export class ApiError extends Error {
   status: number
 
@@ -83,8 +87,11 @@ export async function httpRequest<T>(path: string, init?: RequestInit): Promise<
   if (!response.ok) {
     if (response.status === 401) {
       clearAuthToken()
-      window.location.href = '/login'
-      throw new ApiError('Sesión expirada. Redirigiendo al inicio de sesión.', 401)
+      if (!isAuthPath(path)) {
+        window.location.href = '/login'
+        throw new ApiError('Sesión expirada. Redirigiendo al inicio de sesión.', 401)
+      }
+      throw new ApiError('Credenciales invalidas.', 401)
     }
     await throwHttpError(response)
   }
@@ -114,8 +121,11 @@ export async function httpRequestBlob(path: string, init?: RequestInit): Promise
   if (!response.ok) {
     if (response.status === 401) {
       clearAuthToken()
-      window.location.href = '/login'
-      throw new ApiError('Sesión expirada. Redirigiendo al inicio de sesión.', 401)
+      if (!isAuthPath(path)) {
+        window.location.href = '/login'
+        throw new ApiError('Sesión expirada. Redirigiendo al inicio de sesión.', 401)
+      }
+      throw new ApiError('Credenciales invalidas.', 401)
     }
     await throwHttpError(response)
   }
