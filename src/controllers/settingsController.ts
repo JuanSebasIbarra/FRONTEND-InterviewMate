@@ -59,8 +59,8 @@ export async function loadProfileData(): Promise<SettingsData> {
   const [user, profile] = await Promise.all([getMe(), getProfile()])
   return {
     userId: user.id,
-    username: profile.username,
-    email: profile.email,
+    username: user.username,
+    email: user.email,
     perfilProfesional: profile.perfilProfesional ?? '',
     local: readLocalSettings(),
   }
@@ -92,8 +92,8 @@ export async function savePersonalInfo(payload: {
   const [user, profile] = await Promise.all([getMe(), getProfile()])
   return {
     userId: user.id,
-    username: profile.username,
-    email: profile.email,
+    username: user.username,
+    email: user.email,
     perfilProfesional: profile.perfilProfesional ?? '',
     local: readLocalSettings(),
   }
