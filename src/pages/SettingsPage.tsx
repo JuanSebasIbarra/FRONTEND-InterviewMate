@@ -434,7 +434,7 @@ function SettingsPage() {
                           type="password"
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
-                          placeholder="Mínimo 8 caracteres"
+                          placeholder="Dejar vacío para no cambiar"
                         />
                       </label>
                       <label className="st-label">
@@ -444,7 +444,7 @@ function SettingsPage() {
                           type="password"
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="Repite la contraseña"
+                          placeholder="Repetir nueva contraseña"
                         />
                       </label>
                     </div>
@@ -454,10 +454,10 @@ function SettingsPage() {
                       className="st-btn"
                       onClick={onSaveSecurity}
                       disabled={
-                        savingSecurity || !username.trim() || !email.trim() || !newPassword.trim()
+                        savingSecurity || !username.trim() || !email.trim()
                       }
                     >
-                      {savingSecurity ? 'Guardando...' : 'Guardar cambios de seguridad'}
+                      {savingSecurity ? 'Guardando...' : 'Guardar cambios'}
                     </button>
                   </div>
                 </>
