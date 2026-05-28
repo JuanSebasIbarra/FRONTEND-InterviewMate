@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createTemplate } from '../services/templateService'
 import type { CreateInterviewTemplateRequest, InterviewType } from '../models/interview'
-import { useLanguage, useTranslation } from '../contexts/LanguageContext'
+import { useTranslation } from '../contexts/LanguageContext'
 
 type FieldKey =
 	| 'enterprise'
@@ -57,10 +57,6 @@ function normalizeInterviewType(transcript: string): InterviewType | '' {
 function TemplateCreationPage() {
 	const navigate = useNavigate()
 	const t = useTranslation()
-	const { language } = useLanguage()
-
-	// Map application language to speech recognition locale
-	const speechLang = language === 'EN' ? 'en-US' : 'es-ES'
 
 	const getFieldLabel = (field: FieldKey): string => {
 		const labels: Record<FieldKey, string> = {
@@ -114,7 +110,7 @@ function TemplateCreationPage() {
 		if (!SpeechRecognition) return
 
 		const recognition = new SpeechRecognition()
-		recognition.lang = speechLang
+		recognition.lang = 'es-ES'
 		recognition.continuous = true
 		recognition.interimResults = true
 
@@ -169,7 +165,7 @@ function TemplateCreationPage() {
 			recognition.stop()
 			recognitionRef.current = null
 		}
-	}, [t, speechLang])
+	}, [t])
 
 	const updateField = (field: FieldKey, value: string) => {
 		setActiveField(field)

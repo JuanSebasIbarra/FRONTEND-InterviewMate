@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useLanguage } from '../contexts/LanguageContext'
 
 type StudyTopicModalProps = {
   isOpen: boolean
@@ -21,10 +20,6 @@ function StudyTopicModal({
   const [speechSupported, setSpeechSupported] = useState(false)
   const recognitionRef = useRef<any>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const { language } = useLanguage()
-
-  // Map application language to speech recognition locale
-  const speechLang = language === 'EN' ? 'en-US' : 'es-ES'
 
   // Reset state when modal opens
   useEffect(() => {
@@ -56,7 +51,7 @@ function StudyTopicModal({
     const recognition = new SpeechRecognition()
     recognition.continuous = false
     recognition.interimResults = false
-    recognition.lang = speechLang
+    recognition.lang = 'es-ES'
 
     recognition.onstart = () => setIsListening(true)
     recognition.onend = () => setIsListening(false)
@@ -68,7 +63,7 @@ function StudyTopicModal({
     recognitionRef.current = recognition
 
     return () => recognition.abort()
-  }, [handleTranscript, speechLang])
+  }, [handleTranscript])
 
   const toggleListening = () => {
     if (isListening) {
