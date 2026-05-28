@@ -1,14 +1,30 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { loginUser } from '../controllers/authController'
 import { getGoogleOAuthStartUrl } from '../services/authService'
 
 function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({ username: '', password: '' })
+
+  // Check for OAuth errors from the callback
+  useEffect(() => {
+    const state = location.state as { oauthError?: string; errorMessage?: string } | null
+    if (state?.oauthError) {
+      const errorMessages: Record<string, string> = {
+        cookie_blocked: state.errorMessage || 'El navegador bloqueó las cookies de autenticación. Por favor, usa el login tradicional.',
+        authentication_failed: 'La autenticación con Google falló. Por favor, inténtalo de nuevo.',
+      }
+      setError(errorMessages[state.oauthError] || state.errorMessage || 'Error de autenticación con Google.')
+      
+      // Clear the state to prevent showing error on refresh
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+  }, [location, navigate])
 
   const onGoogleLogin = () => {
     window.location.assign(getGoogleOAuthStartUrl())
