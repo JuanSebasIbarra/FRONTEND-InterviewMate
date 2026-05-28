@@ -130,22 +130,13 @@ function HistoryPage() {
                 </p>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={() => navigate('/dashboard')}
-                  className="rounded-full border border-zinc-300 bg-white px-5 py-2.5 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100"
-                >
-                  Volver al dashboard
-                </button>
-                <button
-                  type="button"
-                  onClick={handleAdd}
-                  className="rounded-full bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white transition hover:opacity-80"
-                >
-                  Nueva plantilla
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleAdd}
+                className="rounded-full bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white transition hover:opacity-80"
+              >
+                Nueva plantilla
+              </button>
             </div>
           </header>
 
