@@ -13,7 +13,7 @@ type Section = 'personal' | 'security'
 
 function SettingsPage() {
   const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const [activeSection, setActiveSection] = useState<Section>(() => {
     const param = searchParams.get('section')
     return param === 'security' ? param : 'personal'
@@ -74,15 +74,6 @@ function SettingsPage() {
     setAvatarPreview(data.local.avatarDataUrl)
     setUsername(data.username)
     setEmail(data.email)
-  }
-
-  const navigateTo = (section: Section) => {
-    setActiveSection(section)
-    setSearchParams({ section })
-    setPersonalError('')
-    setPersonalSuccess('')
-    setSecurityError('')
-    setSecuritySuccess('')
   }
 
   const onAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
