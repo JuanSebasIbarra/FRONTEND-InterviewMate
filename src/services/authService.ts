@@ -20,10 +20,10 @@ export function getMe() {
   return httpRequest<User>('/auth/me')
 }
 
-async function tryLogout(path: string, method: 'POST' | 'GET' = 'POST') {
+async function tryLogout(path: string) {
   try {
     const response = await fetch(buildApiUrl(path), {
-      method,
+      method: 'POST',
       credentials: 'include',
       cache: 'no-store',
       keepalive: true,
@@ -35,23 +35,10 @@ async function tryLogout(path: string, method: 'POST' | 'GET' = 'POST') {
 }
 
 /**
- * Attempts to invalidate server-side session/cookies.
- * We try common logout paths because backend deployments may expose
- * different endpoints depending on security configuration.
+ * Invalidates server-side session/cookies using the fixed backend logout endpoint.
  */
 export async function logoutUser() {
-  const logoutPath = import.meta.env.VITE_LOGOUT_PATH ?? '/logout'
-  const apiLogoutPath = import.meta.env.VITE_API_LOGOUT_PATH ?? '/api/v1/auth/logout'
-  const uniquePaths = [...new Set([logoutPath, apiLogoutPath])]
-
-  // First try POST for every configured endpoint.
-  const postResults = await Promise.all(uniquePaths.map((path) => tryLogout(path, 'POST')))
-  const hasSuccess = postResults.some(Boolean)
-
-  if (!hasSuccess) {
-    // If POST is not accepted by backend/security config, fallback to GET.
-    await Promise.all(uniquePaths.map((path) => tryLogout(path, 'GET')))
-  }
+  await tryLogout('/api/v1/auth/logout')
 }
 
 /**
