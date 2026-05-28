@@ -178,15 +178,6 @@ function SettingsPage() {
           overflow-y: auto;
           height: 100vh;
         }
-        .st-main-title {
-          font-family: 'Instrument Serif', serif;
-          font-size: 1.5rem;
-          font-weight: 400;
-          letter-spacing: -0.02em;
-          color: #111;
-          line-height: 1.2;
-        }
-        .st-main-title em { font-style: italic; color: #aaa; }
         .st-main-sub {
           font-size: 13px;
           color: #999;
@@ -312,14 +303,15 @@ function SettingsPage() {
 
         <div className="st-root st flex-1">
           <main className="st-main">
-            <div>
-              <div className="st-main-title">
-                Ajustes de perfil, <em>rápidos y claros</em>
-              </div>
-              <div className="st-main-sub">
+            <header className="mb-4 border-b border-zinc-200 pb-5">
+              <p className="text-xs uppercase tracking-widest text-zinc-500">Panel principal</p>
+              <h1 className="mt-2 font-serif text-4xl font-normal tracking-[-0.02em] text-zinc-900 sm:text-5xl">
+                Configuración
+              </h1>
+              <p className="st-main-sub">
                 Administra tu información personal y seguridad desde un único panel
-              </div>
-            </div>
+              </p>
+            </header>
 
             {globalError && <p className="st-alert-error">{globalError}</p>}
 
@@ -403,10 +395,9 @@ function SettingsPage() {
               {activeSection === 'security' && (
                 <>
                   <div>
-                    <div className="st-section-title">Seguridad y acceso</div>
+                    <div className="st-section-title">Seguridad</div>
                     <div className="st-section-sub">
-                      Actualiza tu usuario, correo vinculado y contraseña. Se requiere
-                      contraseña nueva para guardar cualquier cambio.
+                      Actualiza tu usuario, correo vinculado y contraseña.
                     </div>
                   </div>
 
