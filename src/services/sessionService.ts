@@ -40,7 +40,7 @@ export function getMySessions() {
   return getMySessionsPage().then((response) => response.data)
 }
 
-export function getMySessionsPage(page = 0, size = 20): Promise<PageData<InterviewSession>> {
+export async function getMySessionsPage(page = 0, size = 20): Promise<PageData<InterviewSession>> {
   const response = await httpRequest<PageResponse<InterviewSession> | InterviewSession[]>(
     `/api/v1/sessions/me?page=${page}&size=${size}`,
   )
