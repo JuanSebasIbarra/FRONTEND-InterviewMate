@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import LoggedUserMenu from './LoggedUserMenu'
 import InterviewMateIcon from '../../assets/interviewmate-main-logo.png'
-import { readLocalSettings } from '../../controllers/settingsController'
-import { getMe } from '../../services/authService'
 
 type DashboardSidebarProps = {
   onLogout: () => void
@@ -13,42 +10,11 @@ function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
   const location = useLocation()
   const searchParams = new URLSearchParams(location.search)
   const activeSettingsSection = searchParams.get('section') ?? 'personal'
-  const localSettings = readLocalSettings()
-  const localDisplayName = [localSettings.firstName, localSettings.lastName]
-    .filter((value) => Boolean(value?.trim()))
-    .join(' ')
-    .trim()
-  const [remoteUsername, setRemoteUsername] = useState('')
   const [isConfigOpen, setIsConfigOpen] = useState(location.pathname === '/settings')
-
-  useEffect(() => {
-    let active = true
-
-    const loadUser = async () => {
-      try {
-        const user = await getMe()
-        if (active) {
-          setRemoteUsername(user.username ?? '')
-        }
-      } catch {
-        if (active) {
-          setRemoteUsername('')
-        }
-      }
-    }
-
-    void loadUser()
-
-    return () => {
-      active = false
-    }
-  }, [])
 
   useEffect(() => {
     setIsConfigOpen(location.pathname === '/settings')
   }, [location.pathname])
-
-  const displayName = localDisplayName || remoteUsername || 'Usuario'
 
   const toggleConfig = () => {
     setIsConfigOpen((prev) => !prev)
@@ -56,14 +22,29 @@ function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
 
   return (
     <aside className="flex min-h-105 w-72 flex-col border border-zinc-300 bg-zinc-50 px-3 py-6">
-      <div className="flex flex-col items-center gap-2">
-        <div className="flex w-full items-center justify-center rounded-md px-3 py-3">
+      <div className="flex flex-col gap-2">
+        <div className="flex w-full items-center justify-center rounded-md px-3 py-3 mb-2">
           <img
             src={InterviewMateIcon}
             alt="InterviewMate"
             className="h-auto w-full max-w-[190px] object-contain"
           />
         </div>
+        
+        <Link
+          to="/dashboard"
+          className={`w-full border-b border-black/75 px-4 py-3 text-left text-sm rounded-t-md text-zinc-700 transition hover:scale-105 hover:bg-interviewmate-blue/25 ${location.pathname === '/dashboard' ? 'bg-interviewmate-blue/15 font-medium' : ''}`}
+        >
+          Dashboard
+        </Link>
+
+        <Link
+          to="/history"
+          className={`w-full border-b border-black/75 px-4 py-3 text-left text-sm rounded-t-md text-zinc-700 transition hover:scale-105 hover:bg-interviewmate-blue/25 ${location.pathname === '/history' ? 'bg-interviewmate-blue/15 font-medium' : ''}`}
+        >
+          Historial
+        </Link>
+
         <div className="w-full">
           <button
             type="button"
@@ -97,16 +78,14 @@ function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
             </div>
           )}
         </div>
-        <Link
-          to="/history"
-          className={`w-full border-b border-black/75 px-4 py-3 text-left text-sm rounded-t-md text-zinc-700 transition hover:scale-105 hover:bg-interviewmate-blue/25 ${location.pathname === '/history' ? 'bg-interviewmate-blue/15 font-medium' : ''}`}
-        >
-          Historial
-        </Link>
-      </div>
 
-      <div className="mt-auto pt-6">
-        <LoggedUserMenu username={displayName} onLogout={onLogout} />
+        <button
+          type="button"
+          onClick={onLogout}
+          className="w-full border-b border-black/75 px-4 py-3 text-left text-sm rounded-t-md text-red-600 transition hover:scale-105 hover:bg-red-50"
+        >
+          Cerrar sesión
+        </button>
       </div>
     </aside>
   )
