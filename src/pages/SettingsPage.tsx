@@ -432,7 +432,6 @@ function SettingsPage() {
                         <input
                           className="st-input"
                           type="password"
-                          value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           placeholder="Dejar vacío para no cambiar"
                         />
@@ -442,7 +441,6 @@ function SettingsPage() {
                         <input
                           className="st-input"
                           type="password"
-                          value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="Repetir nueva contraseña"
                         />
