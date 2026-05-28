@@ -27,6 +27,7 @@ function SettingsPage() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [perfilProfesional, setPerfilProfesional] = useState('')
+  const [language, setLanguage] = useState<'ES' | 'EN'>('ES')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState('')
   const [savingPersonal, setSavingPersonal] = useState(false)
@@ -71,6 +72,7 @@ function SettingsPage() {
     setFirstName(data.local.firstName)
     setLastName(data.local.lastName)
     setPerfilProfesional(data.perfilProfesional)
+    setLanguage(data.language)
     setAvatarPreview(data.local.avatarDataUrl)
     setUsername(data.username)
     setEmail(data.email)
@@ -97,7 +99,7 @@ function SettingsPage() {
     setPersonalError('')
     setPersonalSuccess('')
     try {
-      const updated = await savePersonalInfo({ firstName, lastName, avatarFile, perfilProfesional })
+      const updated = await savePersonalInfo({ firstName, lastName, avatarFile, perfilProfesional, language })
       applyData(updated)
       setAvatarFile(null)
       setPersonalSuccess('Información personal actualizada.')
@@ -230,7 +232,8 @@ function SettingsPage() {
         }
         .st-input,
         .st-textarea,
-        .st-file {
+        .st-file,
+        .st-select {
           font-family: 'DM Sans', sans-serif;
           font-size: 12px;
           font-weight: 300;
@@ -245,10 +248,12 @@ function SettingsPage() {
         }
         .st-input:focus,
         .st-textarea:focus,
-        .st-file:focus {
+        .st-file:focus,
+        .st-select:focus {
           border-color: #aaa;
         }
         .st-textarea { resize: vertical; min-height: 120px; }
+        .st-select { cursor: pointer; }
 
         .st-avatar-row {
           display: grid;
@@ -378,6 +383,18 @@ function SettingsPage() {
                         onChange={(e) => setPerfilProfesional(e.target.value)}
                         placeholder="Describe tu experiencia, stack y objetivos profesionales"
                       />
+                    </label>
+
+                    <label className="st-label">
+                      Idioma de las entrevistas
+                      <select
+                        className="st-select"
+                        value={language}
+                        onChange={(e) => setLanguage(e.target.value as 'ES' | 'EN')}
+                      >
+                        <option value="ES">🇪🇸 Español</option>
+                        <option value="EN">🇬🇧 English</option>
+                      </select>
                     </label>
 
                     <button

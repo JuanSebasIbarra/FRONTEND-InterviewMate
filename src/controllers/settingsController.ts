@@ -16,6 +16,7 @@ export type SettingsData = {
   username: string
   email: string
   perfilProfesional: string
+  language: 'ES' | 'EN'
   local: LocalSettingsAssets
 }
 
@@ -62,6 +63,7 @@ export async function loadProfileData(): Promise<SettingsData> {
     username: user.username,
     email: user.email,
     perfilProfesional: profile.perfilProfesional ?? '',
+    language: profile.language ?? 'ES',
     local: readLocalSettings(),
   }
 }
@@ -71,6 +73,7 @@ export async function savePersonalInfo(payload: {
   lastName: string
   avatarFile: File | null
   perfilProfesional: string
+  language?: 'ES' | 'EN'
 }): Promise<SettingsData> {
   const current = readLocalSettings()
   const avatarDataUrl = payload.avatarFile
@@ -80,6 +83,7 @@ export async function savePersonalInfo(payload: {
   await updateProfile({
     perfilProfesional: payload.perfilProfesional,
     profilePictureUrl: avatarDataUrl || undefined,
+    language: payload.language,
   })
 
   writeLocalSettings({
@@ -95,6 +99,7 @@ export async function savePersonalInfo(payload: {
     username: user.username,
     email: user.email,
     perfilProfesional: profile.perfilProfesional ?? '',
+    language: profile.language ?? 'ES',
     local: readLocalSettings(),
   }
 }
