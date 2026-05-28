@@ -39,9 +39,9 @@ async function tryLogout(path: string, method: 'POST' | 'GET' = 'POST') {
  */
 export async function logoutUser() {
   const attempts: Array<{ path: string; method?: 'POST' | 'GET' }> = [
+    { path: '/logout', method: 'POST' },
     { path: '/api/v1/auth/logout', method: 'POST' },
     { path: '/auth/logout', method: 'POST' },
-    { path: '/logout', method: 'POST' },
     { path: '/logout', method: 'GET' },
   ]
 
