@@ -151,11 +151,6 @@ function LoginPage() {
                   setForm((prev) => ({ ...prev, password: e.target.value }))
                 }
               />
-              <div className="-mt-0.5 flex justify-end">
-                <a className="text-[11px] text-zinc-400 underline underline-offset-3 mt-3" href="#">
-                  ¿Olvidaste tu contraseña?
-                </a>
-              </div>
             </div>
 
             <button
