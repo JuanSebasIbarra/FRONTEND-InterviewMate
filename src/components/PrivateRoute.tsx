@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { ReactElement } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useSession } from '../contexts/SessionContext'
@@ -7,9 +8,15 @@ type PrivateRouteProps = {
 }
 
 function PrivateRoute({ children }: PrivateRouteProps) {
-  const { status } = useSession()
+  const { status, refreshSession } = useSession()
 
-  if (status === 'checking') {
+  useEffect(() => {
+    if (status === 'idle') {
+      void refreshSession()
+    }
+  }, [refreshSession, status])
+
+  if (status === 'idle' || status === 'checking') {
     return null
   }
 

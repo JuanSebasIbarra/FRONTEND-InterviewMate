@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { AUTH_STATE_EVENT, type AuthStateEventDetail } from '../lib/auth'
 import { getMe } from '../services/authService'
 
-type SessionStatus = 'checking' | 'authenticated' | 'unauthenticated'
+type SessionStatus = 'idle' | 'checking' | 'authenticated' | 'unauthenticated'
 
 type SessionContextValue = {
   status: SessionStatus
@@ -22,13 +22,15 @@ function readAuthStatusFromEvent(event: Event): SessionStatus | null {
 }
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [status, setStatus] = useState<SessionStatus>('checking')
+  const [status, setStatus] = useState<SessionStatus>('idle')
   const inFlightValidationRef = useRef<Promise<SessionStatus> | null>(null)
 
   const refreshSession = useCallback(async (): Promise<SessionStatus> => {
     if (inFlightValidationRef.current) {
       return inFlightValidationRef.current
     }
+
+    setStatus('checking')
 
     const validationPromise = (async () => {
       try {
@@ -48,14 +50,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    void refreshSession()
-  }, [refreshSession])
-
-  useEffect(() => {
     const onAuthStateChanged = (event: Event) => {
       const nextStatus = readAuthStatusFromEvent(event)
       if (nextStatus) {
         setStatus(nextStatus)
+        inFlightValidationRef.current = null
       }
     }
 
