@@ -50,7 +50,7 @@ type SpeechRecognitionInstanceLike = {
   interimResults: boolean
   lang: string
   onresult: ((event: SpeechRecognitionEventLike) => void) | null
-  onerror: (() => void) | null
+  onerror: ((event: any) => void) | null
   onend: (() => void) | null
   start: () => void
   stop: () => void

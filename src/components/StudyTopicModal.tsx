@@ -52,11 +52,11 @@ function StudyTopicModal({
 
     if (!SpeechRecognition) return
 
-    setSpeechSupported(speechLang
+    setSpeechSupported(true)
     const recognition = new SpeechRecognition()
     recognition.continuous = false
     recognition.interimResults = false
-    recognition.lang = 'es-ES'
+    recognition.lang = speechLang
 
     recognition.onstart = () => setIsListening(true)
     recognition.onend = () => setIsListening(false)
