@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import SessionActionModal from '../components/SessionActionModal'
 import SessionHistoryCard from '../components/SessionHistoryCard'
 import StudyTopicModal from '../components/StudyTopicModal'
 import DashboardSidebar from '../components/dashboard/DashboardSidebar'
@@ -7,8 +8,8 @@ import { logoutUser } from '../controllers/authController'
 import type { InterviewSession, InterviewTemplate } from '../models/interview'
 import type { StudySessionSummary } from '../models/study'
 import { ApiError } from '../services/httpClient'
-import { beginSession, createSession, getSessionsByTemplate } from '../services/sessionService'
-import { getMyStudySessions, startStudy } from '../services/studyService'
+import { beginSession, createSession, deleteSession, getSessionsByTemplate } from '../services/sessionService'
+import { deleteStudySession, getMyStudySessions, startStudy } from '../services/studyService'
 import { getTemplateById } from '../services/templateService'
 
 function getAiErrorMessage(error: unknown): string {
@@ -54,6 +55,10 @@ function SessionPage() {
   const [isCreatingStudy, setIsCreatingStudy] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [isStudyTopicModalOpen, setIsStudyTopicModalOpen] = useState(false)
+  const [isSessionActionModalOpen, setIsSessionActionModalOpen] = useState(false)
+  const [selectedStudySession, setSelectedStudySession] = useState<StudySessionSummary | null>(null)
+  const [selectedInterviewSession, setSelectedInterviewSession] = useState<InterviewSession | null>(null)
+  const [isDeletingSession, setIsDeletingSession] = useState(false)
   const didAutoStartStudyRef = useRef(false)
 
   useEffect(() => {
@@ -161,6 +166,55 @@ function SessionPage() {
     }
   }
 
+  const handleOpenStudySessionModal = (session: StudySessionSummary) => {
+    setSelectedStudySession(session)
+    setSelectedInterviewSession(null)
+    setIsSessionActionModalOpen(true)
+  }
+
+  const handleOpenInterviewSessionModal = (session: InterviewSession) => {
+    setSelectedInterviewSession(session)
+    setSelectedStudySession(null)
+    setIsSessionActionModalOpen(true)
+  }
+
+  const handleCloseSessionActionModal = () => {
+    if (isDeletingSession) return
+    setIsSessionActionModalOpen(false)
+    setSelectedStudySession(null)
+    setSelectedInterviewSession(null)
+  }
+
+  const handleContinueSession = () => {
+    if (selectedStudySession) {
+      navigate(`/sessions/${selectedStudySession.id}/study`, { replace: true })
+    } else if (selectedInterviewSession) {
+      navigate(`/sessions/${selectedInterviewSession.id}/interview`, { replace: true })
+    }
+    handleCloseSessionActionModal()
+  }
+
+  const handleDeleteSession = async () => {
+    setIsDeletingSession(true)
+    setErrorMessage('')
+
+    try {
+      if (selectedStudySession) {
+        await deleteStudySession(selectedStudySession.id)
+        setStudySessions((current) => current.filter((s) => s.id !== selectedStudySession.id))
+      } else if (selectedInterviewSession) {
+        await deleteSession(selectedInterviewSession.id)
+        setInterviewSessions((current) => current.filter((s) => s.id !== selectedInterviewSession.id))
+      }
+      handleCloseSessionActionModal()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo eliminar la sesión.'
+      setErrorMessage(message)
+    } finally {
+      setIsDeletingSession(false)
+    }
+  }
+
   const pageTitle = template
     ? `${template.position} - ${template.enterprise}`
     : 'Sesiones de plantilla'
@@ -213,13 +267,6 @@ function SessionPage() {
           </div>
         </div>
       )}
-      <StudyTopicModal
-        isOpen={isStudyTopicModalOpen}
-        templatePosition={template?.position ?? ''}
-        isLoading={isCreatingStudy}
-        onConfirm={handleStartStudy}
-        onClose={() => setIsStudyTopicModalOpen(false)}
-      />
       <DashboardSidebar
           onLogout={handleLogout}
         />
@@ -263,6 +310,7 @@ function SessionPage() {
                     date={formatSessionDate(session.createdAt)}
                     status="PENDIENTE"
                     type="Sesion de estudio"
+                    onClick={() => handleOpenStudySessionModal(session)}
                   />
                 ))}
               </div>
@@ -300,6 +348,7 @@ function SessionPage() {
                     date={formatSessionDate(session.startedAt ?? session.completedAt)}
                     status={formatInterviewStatus(session.status)}
                     type="Entrevista"
+                    onClick={() => handleOpenInterviewSessionModal(session)}
                   />
                 ))}
               </div>
@@ -307,6 +356,28 @@ function SessionPage() {
           </div>
         </section>
       </main>
+
+      <StudyTopicModal
+        isOpen={isStudyTopicModalOpen}
+        templatePosition={template?.position ?? ''}
+        isLoading={isCreatingStudy}
+        onConfirm={handleStartStudy}
+        onClose={() => setIsStudyTopicModalOpen(false)}
+      />
+
+      <SessionActionModal
+        isOpen={isSessionActionModalOpen}
+        sessionType={selectedStudySession ? 'Sesion de estudio' : 'Entrevista'}
+        sessionDate={
+          selectedStudySession 
+            ? formatSessionDate(selectedStudySession.createdAt)
+            : formatSessionDate(selectedInterviewSession?.startedAt ?? selectedInterviewSession?.completedAt)
+        }
+        isDeleting={isDeletingSession}
+        onCancel={handleCloseSessionActionModal}
+        onContinue={handleContinueSession}
+        onDelete={handleDeleteSession}
+      />
     </div>
   )
 }

@@ -21,3 +21,9 @@ export function getStudyById(studyId: string) {
 export function getMyStudySessions() {
   return httpRequest<StudySessionSummary[]>('/study/me')
 }
+
+export function deleteStudySession(studySessionId: string) {
+  return httpRequest<void>(`${STUDY_BASE_PATH}/${studySessionId}`, {
+    method: 'DELETE',
+  })
+}

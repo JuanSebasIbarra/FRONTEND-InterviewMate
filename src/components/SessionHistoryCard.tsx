@@ -2,11 +2,15 @@ type SessionHistoryCardProps = {
   date: string
   status: string
   type: 'Sesion de estudio' | 'Entrevista'
+  onClick?: () => void
 }
 
-function SessionHistoryCard({ date, status, type }: SessionHistoryCardProps) {
+function SessionHistoryCard({ date, status, type, onClick }: SessionHistoryCardProps) {
   return (
-    <article className="rounded-2xl border border-zinc-300 bg-white px-5 py-4">
+    <article 
+      className="rounded-2xl border border-zinc-300 bg-white px-5 py-4 cursor-pointer transition-all hover:border-zinc-400 hover:shadow-sm"
+      onClick={onClick}
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] uppercase tracking-widest text-zinc-400">{type}</p>
