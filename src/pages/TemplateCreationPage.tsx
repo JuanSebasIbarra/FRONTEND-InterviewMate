@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createTemplate } from '../services/templateService'
 import type { CreateInterviewTemplateRequest, InterviewType } from '../models/interview'
+import { useTranslation } from '../contexts/LanguageContext'
 
 type FieldKey =
 	| 'enterprise'
@@ -23,17 +24,6 @@ type SpeechRecognitionLike = {
 	start: () => void
 	stop: () => void
 	abort?: () => void
-}
-
-const FIELD_LABELS: Record<FieldKey, string> = {
-	enterprise: 'Empresa',
-	type: 'Type',
-	position: 'Position',
-	workingArea: 'Working Area',
-	description: 'Description',
-	requirements: 'Requirements',
-	goals: 'Goals',
-	businessContext: 'Business Context',
 }
 
 const DEFAULT_FORM = {
@@ -66,14 +56,34 @@ function normalizeInterviewType(transcript: string): InterviewType | '' {
 
 function TemplateCreationPage() {
 	const navigate = useNavigate()
+	const t = useTranslation()
+
+	const getFieldLabel = (field: FieldKey): string => {
+		const labels: Record<FieldKey, string> = {
+			enterprise: t.templateCreation.fieldEnterprise,
+			type: t.templateCreation.fieldType,
+			position: t.templateCreation.fieldPosition,
+			workingArea: t.templateCreation.fieldWorkingArea,
+			description: t.templateCreation.fieldDescription,
+			requirements: t.templateCreation.fieldRequirements,
+			goals: t.templateCreation.fieldGoals,
+			businessContext: t.templateCreation.fieldBusinessContext,
+		}
+		return labels[field]
+	}
+
 	const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
 	const activeFieldRef = useRef<FieldKey>('enterprise')
 	const [activeField, setActiveField] = useState<FieldKey>('enterprise')
 	const [isListening, setIsListening] = useState(false)
 	const [isSubmitting, setIsSubmitting] = useState(false)
-	const [statusMessage, setStatusMessage] = useState('Selecciona un campo y presiona Empezar para dictar.')
+	const [statusMessage, setStatusMessage] = useState('')
 	const [errorMessage, setErrorMessage] = useState('')
 	const [formData, setFormData] = useState(DEFAULT_FORM)
+
+	useEffect(() => {
+		setStatusMessage(t.templateCreation.selectFieldPrompt)
+	}, [t])
 
 	useEffect(() => {
 		activeFieldRef.current = activeField
@@ -135,18 +145,18 @@ function TemplateCreationPage() {
 				}
 			})
 
-			setStatusMessage(`Dictado aplicado en ${FIELD_LABELS[currentField] ?? 'campo'}.`)
+			setStatusMessage(`${t.templateCreation.dictationApplied} ${getFieldLabel(currentField)}.`)
 		}
 
 		recognition.onerror = () => {
 			setIsListening(false)
-			setErrorMessage('No se pudo procesar el dictado de voz. Verifica permisos del microfono.')
-			setStatusMessage('El reconocimiento de voz se detuvo.')
+			setErrorMessage(t.templateCreation.speechError)
+			setStatusMessage(t.templateCreation.speechStopped)
 		}
 
 		recognition.onend = () => {
 			setIsListening(false)
-			setStatusMessage('Reconocimiento de voz detenido.')
+			setStatusMessage(t.templateCreation.speechStopped)
 		}
 
 		recognitionRef.current = recognition
@@ -155,7 +165,7 @@ function TemplateCreationPage() {
 			recognition.stop()
 			recognitionRef.current = null
 		}
-	}, [])
+	}, [t])
 
 	const updateField = (field: FieldKey, value: string) => {
 		setActiveField(field)
@@ -170,23 +180,23 @@ function TemplateCreationPage() {
 		setErrorMessage('')
 
 		if (!speechSupported || !recognitionRef.current) {
-			setErrorMessage('Tu navegador no soporta speech to text.')
+			setErrorMessage(t.templateCreation.browserSpeechNotSupported)
 			return
 		}
 
 		try {
 			recognitionRef.current.start()
 			setIsListening(true)
-			setStatusMessage(`Escuchando en ${FIELD_LABELS[activeFieldRef.current] ?? 'campo'}...`)
+			setStatusMessage(`${t.templateCreation.listening} ${getFieldLabel(activeFieldRef.current)}...`)
 		} catch {
-			setErrorMessage('No se pudo iniciar el reconocimiento de voz.')
+			setErrorMessage(t.templateCreation.startError)
 		}
 	}
 
 	const stopListening = () => {
 		recognitionRef.current?.stop()
 		setIsListening(false)
-		setStatusMessage('Reconocimiento de voz pausado.')
+		setStatusMessage(t.templateCreation.speechPaused)
 	}
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -209,18 +219,18 @@ function TemplateCreationPage() {
 			const createdTemplate = await createTemplate(payload)
 
 			if (!createdTemplate?.id) {
-				throw new Error('La plantilla se creo, pero no se recibio el identificador.')
+				throw new Error(t.templateCreation.templateCreatedNoId)
 			}
 
 			navigate(`/sessions/${createdTemplate.id}`)
 		} catch (error) {
-			setErrorMessage(error instanceof Error ? error.message : 'No se pudo crear la plantilla.')
+			setErrorMessage(error instanceof Error ? error.message : t.templateCreation.createError)
 		} finally {
 			setIsSubmitting(false)
 		}
 	}
 
-	const selectedFieldLabel = FIELD_LABELS[activeField] ?? 'campo'
+	const selectedFieldLabel = getFieldLabel(activeField)
 
 	return (
 		<div className="min-h-screen w-full bg-stone-100 px-4 py-4 sm:px-6 lg:px-8">
@@ -232,7 +242,7 @@ function TemplateCreationPage() {
 						className="mb-6 inline-flex w-fit items-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition hover:-translate-y-0.5 hover:border-zinc-400 hover:text-zinc-900"
 					>
 						<span aria-hidden="true">←</span>
-						Regresar
+						{t.templateCreation.backButton}
 					</button>
 
 					<div className="flex flex-1 flex-col">
@@ -246,12 +256,12 @@ function TemplateCreationPage() {
 								</svg>
 							</div>
 							<h2 className="mt-4 font-serif text-3xl font-normal tracking-[-0.02em] text-zinc-900">
-								Dictado
+								{t.templateCreation.dictation}
 							</h2>
 							<p className="mt-1 text-sm text-zinc-600">
 								{speechSupported
-									? `Selecciona un campo y dicta para llenar ${selectedFieldLabel.toLowerCase()}.`
-									: 'Tu navegador no soporta dictado por voz.'}
+								? `${t.templateCreation.dictationHelp} ${selectedFieldLabel.toLowerCase()}.`
+									: t.templateCreation.browserNotSupported}
 							</p>
 						</div>
 
@@ -269,7 +279,7 @@ function TemplateCreationPage() {
 									disabled={!speechSupported || isListening}
 									className="rounded-md bg-zinc-900 px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-zinc-400"
 								>
-									Empezar
+									{t.templateCreation.startButton}
 								</button>
 								<button
 									type="button"
@@ -277,16 +287,16 @@ function TemplateCreationPage() {
 									disabled={!isListening}
 									className="rounded-md border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition hover:border-zinc-400 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-50"
 								>
-									Detener
+									{t.templateCreation.stopButton}
 								</button>
 							</div>
 						</div>
 
 						<div className="mt-4 rounded-md border border-zinc-200 bg-white px-4 py-4">
-							<p className="text-xs uppercase tracking-widest text-zinc-500">Campo activo</p>
+							<p className="text-xs uppercase tracking-widest text-zinc-500">{t.templateCreation.activeField}</p>
 							<p className="mt-2 text-base font-semibold text-zinc-900">{selectedFieldLabel}</p>
 							<p className="mt-2 text-xs text-zinc-500">
-								Haz click en cualquier input del formulario o empieza a escribir para cambiar el destino del dictado.
+								{t.templateCreation.activeFieldHelp}
 							</p>
 						</div>
 					</div>
@@ -295,130 +305,128 @@ function TemplateCreationPage() {
 				<main className="flex min-w-0 flex-1">
 					<section className="w-full overflow-y-auto p-5 sm:p-8 lg:p-10">
 						<header className="mb-8 border-b border-zinc-200 pb-5">
-							<p className="text-xs uppercase tracking-[0.28em] text-zinc-500">Formulario Entrevista</p>
+							<p className="text-xs uppercase tracking-[0.28em] text-zinc-500">{t.templateCreation.formLabel}</p>
 							<h1 className="mt-2 font-serif text-4xl font-normal tracking-[-0.03em] text-zinc-900 sm:text-5xl">
-								Crear plantilla
+								{t.templateCreation.title}
 							</h1>
 							<p className="mt-3 max-w-2xl text-sm text-zinc-600">
-								Completa el formulario manualmente o usa la sidebar para dictar cada campo con voz.
+								{t.templateCreation.subtitle}
 							</p>
 						</header>
 
 						<form className="space-y-5" onSubmit={handleSubmit}>
 							<div className="grid gap-4 md:grid-cols-2">
 								<label className="block">
-									<span className="mb-2 block text-sm font-medium text-zinc-700">Empresa</span>
-									<input
-										type="text"
-										value={formData.enterprise}
-										onFocus={() => handleFieldFocus('enterprise')}
-										onChange={(event) => updateField('enterprise', event.target.value)}
-										className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
-										placeholder="Nombre de la empresa"
+								<span className="mb-2 block text-sm font-medium text-zinc-700">{getFieldLabel('enterprise')}</span>
+								<input
+									type="text"
+									value={formData.enterprise}
+									onFocus={() => handleFieldFocus('enterprise')}
+									onChange={(event) => updateField('enterprise', event.target.value)}
+									className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
+									placeholder={t.templateCreation.placeholderEnterprise}
 									/>
 								</label>
 
 								<label className="block">
-									<span className="mb-2 block text-sm font-medium text-zinc-700">Type</span>
+							<span className="mb-2 block text-sm font-medium text-zinc-700">{getFieldLabel('type')}</span>
 									<select
 										value={formData.type}
 										onFocus={() => handleFieldFocus('type')}
 										onChange={(event) => updateField('type', event.target.value as InterviewType)}
 										className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
 									>
-										<option value="TECHNICAL">Technical</option>
-										<option value="HR">HR</option>
-										<option value="PSYCHOLOGICAL">Psychological</option>
+									<option value="TECHNICAL">{t.templateCreation.interviewTypeTechnical}</option>
+									<option value="HR">{t.templateCreation.interviewTypeHR}</option>
+									<option value="PSYCHOLOGICAL">{t.templateCreation.interviewTypePsychological}</option>
 									</select>
 								</label>
 							</div>
 
 							<label className="block">
-								<span className="mb-2 block text-sm font-medium text-zinc-700">Position</span>
-								<input
-									type="text"
-									value={formData.position}
-									onFocus={() => handleFieldFocus('position')}
-									onChange={(event) => updateField('position', event.target.value)}
-									className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
-									placeholder="Puesto o cargo"
-								/>
-							</label>
+					<span className="mb-2 block text-sm font-medium text-zinc-700">{getFieldLabel('position')}</span>
+					<input
+						type="text"
+						value={formData.position}
+						onFocus={() => handleFieldFocus('position')}
+						onChange={(event) => updateField('position', event.target.value)}
+						className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
+						placeholder={t.templateCreation.placeholderPosition}
+				/>
+			</label>
 
+			<label className="block">
+				<span className="mb-2 block text-sm font-medium text-zinc-700">{t.templateCreation.fieldWorkingArea}</span>
+				<input
+					type="text"
+					value={formData.workingArea}
+					onFocus={() => handleFieldFocus('workingArea')}
+					onChange={(event) => updateField('workingArea', event.target.value)}
+					className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
+					placeholder={t.templateCreation.placeholderWorkingArea}
+				/>
+			</label>
+
+		<label className="block">
+			<span className="mb-2 block text-sm font-medium text-zinc-700">{t.templateCreation.fieldDescription}</span>
+			<textarea
+				rows={6}
+				value={formData.description}
+				onFocus={() => handleFieldFocus('description')}
+				onChange={(event) => updateField('description', event.target.value)}
+				className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
+				placeholder={t.templateCreation.placeholderDescription}
+			/>
+		</label>
+
+		<label className="block">
+				<span className="mb-2 block text-sm font-medium text-zinc-700">{t.templateCreation.fieldRequirements}</span>
+				<textarea
+					rows={4}
+					value={formData.requirements}
+					onFocus={() => handleFieldFocus('requirements')}
+					onChange={(event) => updateField('requirements', event.target.value)}
+					className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
+					placeholder={t.templateCreation.placeholderRequirements}
+				/>
+			</label>
 							<label className="block">
-								<span className="mb-2 block text-sm font-medium text-zinc-700">Working Area</span>
-								<input
-									type="text"
-									value={formData.workingArea}
-									onFocus={() => handleFieldFocus('workingArea')}
-									onChange={(event) => updateField('workingArea', event.target.value)}
-									className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
-									placeholder="Area de trabajo"
-								/>
-							</label>
+				<span className="mb-2 block text-sm font-medium text-zinc-700">{t.templateCreation.fieldGoals}</span>
+				<textarea
+					rows={4}
+					value={formData.goals}
+					onFocus={() => handleFieldFocus('goals')}
+					onChange={(event) => updateField('goals', event.target.value)}
+					className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
+					placeholder={t.templateCreation.placeholderGoals}
+				/>
+			</label>
+			<label className="block">
+				<span className="mb-2 block text-sm font-medium text-zinc-700">{t.templateCreation.fieldBusinessContext}</span>
+				<textarea
+					rows={4}
+					value={formData.businessContext}
+					onFocus={() => handleFieldFocus('businessContext')}
+					onChange={(event) => updateField('businessContext', event.target.value)}
+					className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
+					placeholder={t.templateCreation.placeholderBusinessContext}
+				/>
+			</label>
 
-							<label className="block">
-								<span className="mb-2 block text-sm font-medium text-zinc-700">Description</span>
-								<textarea
-									rows={6}
-									value={formData.description}
-									onFocus={() => handleFieldFocus('description')}
-									onChange={(event) => updateField('description', event.target.value)}
-									className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
-									placeholder="Descripcion de la vacante"
-								/>
-							</label>
-
-							<label className="block">
-								<span className="mb-2 block text-sm font-medium text-zinc-700">Requirements</span>
-								<textarea
-									rows={4}
-									value={formData.requirements}
-									onFocus={() => handleFieldFocus('requirements')}
-									onChange={(event) => updateField('requirements', event.target.value)}
-									className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
-									placeholder="Requisitos del perfil"
-								/>
-							</label>
-
-							<label className="block">
-								<span className="mb-2 block text-sm font-medium text-zinc-700">Goals</span>
-								<textarea
-									rows={4}
-									value={formData.goals}
-									onFocus={() => handleFieldFocus('goals')}
-									onChange={(event) => updateField('goals', event.target.value)}
-									className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
-									placeholder="Objetivos de la entrevista"
-								/>
-							</label>
-
-							<label className="block">
-								<span className="mb-2 block text-sm font-medium text-zinc-700">Business Context</span>
-								<textarea
-									rows={4}
-									value={formData.businessContext}
-									onFocus={() => handleFieldFocus('businessContext')}
-									onChange={(event) => updateField('businessContext', event.target.value)}
-									className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-interviewmate-blue focus:ring-2 focus:ring-interviewmate-blue/20"
-									placeholder="Contexto del negocio"
-								/>
-							</label>
-
-							<div className="flex flex-wrap items-center justify-end gap-3 pt-2">
-								<button
-									type="button"
-									onClick={() => navigate('/dashboard')}
-									className="rounded-md border border-zinc-300 bg-white px-6 py-3 text-sm font-medium text-zinc-700 transition hover:border-zinc-400 hover:text-zinc-900"
-								>
-									Cancelar
-								</button>
+			<div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+				<button
+					type="button"
+					onClick={() => navigate('/dashboard')}
+					className="rounded-md border border-zinc-300 bg-white px-6 py-3 text-sm font-medium text-zinc-700 transition hover:border-zinc-400 hover:text-zinc-900"
+				>
+					{t.templateCreation.cancelButton}
+				</button>
 								<button
 									type="submit"
 									disabled={isSubmitting}
 									className="rounded-md bg-zinc-900 px-7 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
 								>
-									{isSubmitting ? 'Creando...' : 'Crear'}
+									{isSubmitting ? t.templateCreation.creating : t.templateCreation.createButton}
 								</button>
 							</div>
 						</form>
