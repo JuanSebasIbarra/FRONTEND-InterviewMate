@@ -1,3 +1,5 @@
+import { useTranslation } from '../contexts/LanguageContext'
+
 type DeleteTemplateModalProps = {
   isOpen: boolean
   templateName: string
@@ -13,6 +15,7 @@ function DeleteTemplateModal({
   onCancel,
   onConfirm,
 }: DeleteTemplateModalProps) {
+  const t = useTranslation()
   if (!isOpen) return null
 
   return (
@@ -26,14 +29,10 @@ function DeleteTemplateModal({
       >
         <div className="mb-5">
           <h2 className="font-serif text-2xl font-normal tracking-[-0.02em] text-zinc-900">
-            ¿Eliminar plantilla?
+            {t.templates.deleteConfirm}
           </h2>
           <p className="mt-2 text-sm text-zinc-600">
-            Esta accion eliminara
-            {' '}
-            <span className="font-medium text-zinc-900">{templateName}</span>
-            {' '}
-            de tu listado. Esta accion no se puede deshacer.
+            {t.templates.deleteMessage.replace('{name}', templateName)}
           </p>
         </div>
 
@@ -44,7 +43,7 @@ function DeleteTemplateModal({
             disabled={isDeleting}
             className="flex-1 rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Cancelar
+            {t.common.cancel}
           </button>
           <button
             type="button"
@@ -52,7 +51,7 @@ function DeleteTemplateModal({
             disabled={isDeleting}
             className="flex-1 rounded-full bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isDeleting ? 'Eliminando...' : 'Eliminar'}
+            {isDeleting ? t.templates.deleting : t.common.delete}
           </button>
         </div>
       </div>
