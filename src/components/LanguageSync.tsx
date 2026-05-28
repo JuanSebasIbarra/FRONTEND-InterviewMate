@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
+import { isAuthenticated } from '../lib/auth'
 import { getProfile } from '../services/profileService'
 
 /**
@@ -15,14 +16,18 @@ export function LanguageSync() {
     if (hasSync.current) return
 
     const syncLanguageFromProfile = async () => {
+      // Only fetch profile if user is authenticated
+      if (!isAuthenticated()) {
+        return
+      }
+
       try {
         const profile = await getProfile()
         if (profile.language && (profile.language === 'ES' || profile.language === 'EN')) {
           setLanguage(profile.language)
         }
       } catch {
-        // Ignore errors - user might not be authenticated yet
-        // The language will default to localStorage or 'ES'
+        // Ignore errors - the language will default to localStorage or 'ES'
       }
     }
 
