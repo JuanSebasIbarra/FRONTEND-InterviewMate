@@ -25,6 +25,8 @@ async function tryLogout(path: string, method: 'POST' | 'GET' = 'POST') {
     const response = await fetch(buildApiUrl(path), {
       method,
       credentials: 'include',
+      cache: 'no-store',
+      keepalive: true,
     })
     return response.ok
   } catch {
@@ -39,16 +41,16 @@ async function tryLogout(path: string, method: 'POST' | 'GET' = 'POST') {
  */
 export async function logoutUser() {
   const logoutPath = import.meta.env.VITE_LOGOUT_PATH ?? '/logout'
-  const attempts: Array<{ path: string; method?: 'POST' | 'GET' }> = [
-    { path: logoutPath, method: 'POST' },
-    { path: logoutPath, method: 'GET' },
-  ]
+  const apiLogoutPath = import.meta.env.VITE_API_LOGOUT_PATH ?? '/api/v1/auth/logout'
+  const uniquePaths = [...new Set([logoutPath, apiLogoutPath])]
 
-  for (const attempt of attempts) {
-    const didLogout = await tryLogout(attempt.path, attempt.method)
-    if (didLogout) {
-      return
-    }
+  // First try POST for every configured endpoint.
+  const postResults = await Promise.all(uniquePaths.map((path) => tryLogout(path, 'POST')))
+  const hasSuccess = postResults.some(Boolean)
+
+  if (!hasSuccess) {
+    // If POST is not accepted by backend/security config, fallback to GET.
+    await Promise.all(uniquePaths.map((path) => tryLogout(path, 'GET')))
   }
 }
 
