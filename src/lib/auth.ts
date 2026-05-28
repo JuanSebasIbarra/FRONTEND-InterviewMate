@@ -1,5 +1,10 @@
 export const TOKEN_STORAGE_KEY = 'interviewmate_token'
 export const TOKEN_COOKIE_NAME = 'interviewmate_auth'
+export const AUTH_STATE_EVENT = 'interviewmate:auth-state-changed'
+
+export type AuthStateEventDetail = {
+  status: 'authenticated' | 'unauthenticated'
+}
 
 type SaveAuthTokenOptions = {
   expiresAt?: string
@@ -7,6 +12,15 @@ type SaveAuthTokenOptions = {
 
 function isBrowser() {
   return typeof document !== 'undefined'
+}
+
+function emitAuthState(status: AuthStateEventDetail['status']) {
+  if (!isBrowser()) return
+  window.dispatchEvent(
+    new CustomEvent<AuthStateEventDetail>(AUTH_STATE_EVENT, {
+      detail: { status },
+    }),
+  )
 }
 
 function getCookieValue(name: string) {
@@ -75,9 +89,11 @@ export function isAuthenticated() {
 export function saveAuthToken(token: string, options?: SaveAuthTokenOptions) {
   setTokenCookie(token, options?.expiresAt)
   localStorage.removeItem(TOKEN_STORAGE_KEY)
+  emitAuthState('authenticated')
 }
 
 export function clearAuthToken() {
   clearTokenCookie()
   localStorage.removeItem(TOKEN_STORAGE_KEY)
+  emitAuthState('unauthenticated')
 }

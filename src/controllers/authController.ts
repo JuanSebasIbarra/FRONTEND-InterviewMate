@@ -1,4 +1,4 @@
-import { saveAuthToken } from '../lib/auth'
+import { clearAuthToken, saveAuthToken } from '../lib/auth'
 import type { LoginRequest, RegisterRequest } from '../models/auth'
 import * as authService from '../services/authService'
 
@@ -58,4 +58,12 @@ export async function registerUser(payload: {
   }
 
   await authService.register(request)
+}
+
+export async function logoutUser() {
+  try {
+    await authService.logoutUser()
+  } finally {
+    clearAuthToken()
+  }
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { RouterProvider } from 'react-router-dom'
 import { appRouter } from './router'
+import { SessionProvider } from './contexts/SessionContext'
 import { clearAuthToken, getAuthToken, saveAuthToken } from './lib/auth'
 import { API_BASE_URL, buildApiUrl } from './lib/api'
 
@@ -468,7 +469,11 @@ export function LegacyApp() {
 }
 
 function App() {
-  return <RouterProvider router={appRouter} />
+  return (
+    <SessionProvider>
+      <RouterProvider router={appRouter} />
+    </SessionProvider>
+  )
 }
 
 export default App

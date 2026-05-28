@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import InterviewMateIcon from '../assets/interviewmate-main-logo.png'
 import LoggedUserMenu from '../components/dashboard/LoggedUserMenu'
-import { clearAuthToken } from '../lib/auth'
+import { logoutUser } from '../controllers/authController'
 import {
   loadProfileData,
   savePersonalInfo,
@@ -149,8 +149,8 @@ function SettingsPage() {
     }
   }
 
-  const onLogout = () => {
-    clearAuthToken()
+  const onLogout = async () => {
+    await logoutUser()
     navigate('/login', { replace: true })
   }
 

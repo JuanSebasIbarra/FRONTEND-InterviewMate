@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import SessionHistoryCard from '../components/SessionHistoryCard'
 import StudyTopicModal from '../components/StudyTopicModal'
 import DashboardSidebar from '../components/dashboard/DashboardSidebar'
-import { clearAuthToken } from '../lib/auth'
+import { logoutUser } from '../controllers/authController'
 import type { InterviewSession, InterviewTemplate } from '../models/interview'
 import type { StudySessionSummary } from '../models/study'
 import { ApiError } from '../services/httpClient'
@@ -114,9 +114,9 @@ function SessionPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateId, searchParams])
 
-  const handleLogout = () => {
-    clearAuthToken()
-    navigate('/login')
+  const handleLogout = async () => {
+    await logoutUser()
+    navigate('/login', { replace: true })
   }
 
   const handleStartInterview = async () => {
