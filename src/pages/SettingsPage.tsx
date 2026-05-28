@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import InterviewMateIcon from '../assets/interviewmate-main-logo.png'
-import LoggedUserMenu from '../components/dashboard/LoggedUserMenu'
+import DashboardSidebar from '../components/dashboard/DashboardSidebar'
 import { logoutUser } from '../controllers/authController'
 import {
   loadProfileData,
@@ -11,11 +10,6 @@ import {
 } from '../controllers/settingsController'
 
 type Section = 'personal' | 'security'
-
-const SIDEBAR_ITEMS: { id: Section; label: string }[] = [
-  { id: 'personal', label: 'Información personal' },
-  { id: 'security', label: 'Seguridad y acceso' },
-]
 
 function SettingsPage() {
   const navigate = useNavigate()
@@ -159,22 +153,8 @@ function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="st-root">
-        <style>{`
-          .st-root {
-            font-family: 'DM Sans', sans-serif;
-            background: #f5f5f4;
-            min-height: 100vh;
-            display: grid;
-            place-items: center;
-          }
-          .st-loading {
-            font-size: 13px;
-            color: #888;
-            font-weight: 300;
-          }
-        `}</style>
-        <p className="st-loading">Cargando perfil...</p>
+      <div className="flex h-screen w-screen items-center justify-center bg-stone-100">
+        <p className="text-sm text-zinc-500">Cargando perfil...</p>
       </div>
     )
   }
@@ -188,213 +168,8 @@ function SettingsPage() {
           font-family: 'DM Sans', sans-serif;
           background: #f5f5f4;
           min-height: 100vh;
-          display: grid;
-          grid-template-rows: 52px 1fr;
         }
 
-        .st-topbar {
-          background: #fff;
-          border-bottom: 0.5px solid #e5e5e5;
-          padding: 0 2rem;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          position: sticky;
-          top: 0;
-          z-index: 10;
-          overflow: visible;
-        }
-        .st-brand {
-          display: flex;
-          align-items: center;
-          cursor: pointer;
-          width: 190px;
-          max-width: 100%;
-        }
-        .st-brand-logo {
-          width: 28px;
-          height: 28px;
-          object-fit: contain;
-        }
-        .st-topbar-right {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          position: relative;
-          overflow: visible;
-        }
-        .st-menu {
-          position: relative;
-        }
-        .st-back {
-          font-size: 12px;
-          color: #888;
-          border: 0.5px solid #e5e5e5;
-          border-radius: 6px;
-          padding: 5px 10px;
-          background: none;
-          cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
-          transition: background 0.12s;
-        }
-        .st-back:hover {
-          background: #f5f5f4;
-          color: #111;
-        }
-        .st-avatar {
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          background: #EEEDFE;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 11px;
-          font-weight: 500;
-          color: #534AB7;
-          border: 0.5px solid #ddd;
-        }
-        .st-avatar-btn {
-          border: 0.5px solid #ddd;
-          cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
-          transition: background 0.12s;
-        }
-        .st-avatar-btn:hover {
-          background: #e9e7ff;
-        }
-        .st-menu-dropdown {
-          position: absolute;
-          top: calc(100% + 6px);
-          right: 0;
-          width: 210px;
-          background: #fff;
-          border: 0.5px solid #e5e5e5;
-          border-radius: 8px;
-          padding: 6px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-          z-index: 1000;
-          display: flex;
-          flex-direction: column;
-          gap: 3px;
-        }
-        .st-menu-item {
-          border: none;
-          background: transparent;
-          text-align: left;
-          width: 100%;
-          border-radius: 6px;
-          padding: 8px 10px;
-          color: #444;
-          font-size: 12px;
-          cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
-        }
-        .st-menu-item:hover {
-          background: #f5f5f4;
-        }
-        .st-menu-divider {
-          border: none;
-          border-top: 0.5px solid #ececec;
-          margin: 3px 0;
-        }
-        .st-menu-item-danger {
-          color: #dc2626;
-        }
-
-        .st-body {
-          display: grid;
-          grid-template-columns: 320px 1fr;
-          min-height: 0;
-        }
-
-        .st-sidebar {
-          background: #fff;
-          border-right: 0.5px solid #e5e5e5;
-          padding: 1.5rem 0.75rem;
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-          overflow-y: auto;
-        }
-        .st-sidebar-footer {
-          margin-top: auto;
-          padding-top: 0.5rem;
-        }
-        .st-sidebar-label {
-          font-size: 10px;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: #bbb;
-          margin-bottom: 4px;
-        }
-        .st-profile-card {
-          background: #f9f9f8;
-          border: 0.5px solid #e5e5e5;
-          border-radius: 8px;
-          padding: 10px 12px;
-          display: grid;
-          gap: 7px;
-        }
-        .st-profile-main {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .st-profile-avatar {
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          background: #EEF2FF;
-          display: grid;
-          place-items: center;
-          color: #4338CA;
-          font-weight: 500;
-          font-size: 12px;
-          overflow: hidden;
-          border: 0.5px solid #ddd;
-          flex-shrink: 0;
-        }
-        .st-profile-avatar img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        .st-profile-name {
-          font-size: 12px;
-          color: #111;
-          font-weight: 500;
-          line-height: 1.3;
-        }
-        .st-profile-email {
-          font-size: 11px;
-          color: #999;
-          font-weight: 300;
-          line-height: 1.3;
-          word-break: break-all;
-        }
-        .st-nav {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-        .st-nav-item {
-          border: none;
-          background: transparent;
-          text-align: left;
-          padding: 8px 10px;
-          border-radius: 8px;
-          color: #555;
-          font-size: 13px;
-          cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
-          transition: background 0.12s;
-        }
-        .st-nav-item:hover { background: #f5f5f4; }
-        .st-nav-item.st-active {
-          background: #111;
-          color: #fff;
-        }
         .st-alert-error {
           font-size: 11px;
           color: #dc2626;
@@ -410,6 +185,7 @@ function SettingsPage() {
           flex-direction: column;
           gap: 1rem;
           overflow-y: auto;
+          height: 100vh;
         }
         .st-main-title {
           font-family: 'Instrument Serif', serif;
@@ -536,69 +312,14 @@ function SettingsPage() {
         }
 
         @media (max-width: 860px) {
-          .st-body { grid-template-columns: 1fr; }
           .st-grid-two { grid-template-columns: 1fr; }
         }
       `}</style>
 
-      <div className="st-root st">
-        <div className="st-topbar">
-          <div className="st-brand" onClick={() => navigate('/dashboard')}>
-            <img src={InterviewMateIcon} alt="InterviewMate logo" className="st-brand-logo" />
-            InterviewMate
-          </div>
-          <div className="st-topbar-right">
-            <button type="button" className="st-back" onClick={() => navigate('/dashboard')}>
-              ← Dashboard
-            </button>
-          </div>
-        </div>
+      <div className="flex h-screen w-screen bg-stone-100">
+        <DashboardSidebar onLogout={onLogout} />
 
-        <div className="st-body">
-          <aside className="st-sidebar">
-            <div>
-              <div className="st-sidebar-label">Perfil</div>
-              <div className="st-profile-card">
-                <div className="st-profile-main">
-                  <div className="st-profile-avatar">
-                    {avatarPreview ? (
-                      <img src={avatarPreview} alt="Foto de perfil" />
-                    ) : (
-                      <span>{avatarInitial}</span>
-                    )}
-                  </div>
-                  <div>
-                    <div className="st-profile-name">{displayName}</div>
-                    <div className="st-profile-email">{profileData?.email ?? '—'}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div className="st-sidebar-label">Configuración</div>
-              <nav className="st-nav" aria-label="Secciones de configuración">
-                {SIDEBAR_ITEMS.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={`st-nav-item ${activeSection === item.id ? 'st-active' : ''}`}
-                    onClick={() => navigateTo(item.id)}
-                    aria-current={activeSection === item.id ? 'page' : undefined}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </nav>
-            </div>
-
-            {globalError && <p className="st-alert-error">{globalError}</p>}
-
-            <div className="st-sidebar-footer">
-              <LoggedUserMenu username={displayName} onLogout={onLogout} />
-            </div>
-          </aside>
-
+        <div className="st-root st flex-1">
           <main className="st-main">
             <div>
               <div className="st-main-title">
@@ -608,6 +329,8 @@ function SettingsPage() {
                 Administra tu información personal y seguridad desde un único panel
               </div>
             </div>
+
+            {globalError && <p className="st-alert-error">{globalError}</p>}
 
             <div className="st-content">
               {activeSection === 'personal' && (
