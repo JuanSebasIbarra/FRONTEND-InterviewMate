@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLanguage } from '../contexts/LanguageContext'
 
 type MicrophoneButtonProps = {
   onTranscript: (text: string) => void
@@ -7,6 +8,10 @@ type MicrophoneButtonProps = {
 function MicrophoneButton({ onTranscript }: MicrophoneButtonProps) {
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef<any>(null)
+  const { language } = useLanguage()
+
+  // Map application language to speech recognition locale
+  const speechLang = language === 'EN' ? 'en-US' : 'es-ES'
 
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
@@ -18,7 +23,7 @@ function MicrophoneButton({ onTranscript }: MicrophoneButtonProps) {
     recognitionRef.current = new SpeechRecognition()
     recognitionRef.current.continuous = false
     recognitionRef.current.interimResults = true
-    recognitionRef.current.lang = 'es-ES'
+    recognitionRef.current.lang = speechLang
 
     recognitionRef.current.onstart = () => setIsListening(true)
     recognitionRef.current.onend = () => setIsListening(false)
@@ -38,7 +43,7 @@ function MicrophoneButton({ onTranscript }: MicrophoneButtonProps) {
     return () => {
       recognitionRef.current?.abort()
     }
-  }, [onTranscript])
+  }, [onTranscript, speechLang])
 
   const toggleListening = () => {
     if (isListening) {

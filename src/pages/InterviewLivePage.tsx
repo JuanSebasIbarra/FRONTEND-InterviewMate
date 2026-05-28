@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { AvatarScene } from '../components/avatar/AvatarScene'
 import type { AvatarState } from '../components/AvatarGLB'
 import { readLocalSettings } from '../controllers/settingsController'
+import { useLanguage } from '../contexts/LanguageContext'
 import {
   loadInterviewSessionData,
   submitQuestionAnswer,
@@ -141,6 +142,10 @@ function InterviewLivePage() {
   const [userDisplayName, setUserDisplayName] = useState('Candidato')
   // Estado del avatar impulsado por la IA (null = dejar que el useMemo normal decida)
   const [aiAvatarOverride, setAiAvatarOverride] = useState<AvatarState | null>(null)
+  const { language } = useLanguage()
+
+  // Map application language to speech recognition locale
+  const speechLang = language === 'EN' ? 'en-US' : 'es-ES'
 
   const speechRecognitionSupported = Boolean(
     window.SpeechRecognition || window.webkitSpeechRecognition,
@@ -371,7 +376,7 @@ function InterviewLivePage() {
     }))
 
     const recognition = new SpeechRecognitionApi()
-    recognition.lang = 'es-ES'
+    recognition.lang = speechLang
     recognition.continuous = true
     recognition.interimResults = true
 
@@ -393,13 +398,18 @@ function InterviewLivePage() {
       }))
     }
 
-    recognition.onerror = () => {
-      setErrorMessage('No se pudo procesar el audio. Verifica permisos del microfono.')
+    recognition.onerror = (event: any) => {
+      // Only show error if it's not a "no-speech" or "aborted" error
+      if (event?.error && !['no-speech', 'aborted'].includes(event.error)) {
+        setErrorMessage('No se pudo procesar el audio. Verifica permisos del microfono.')
+      }
       setIsRecording(false)
     }
 
     recognition.onend = () => {
+      // Recognition ended - update state
       setIsRecording(false)
+      // Note: Users can restart recording by clicking the microphone button again
     }
 
     recognitionRef.current = recognition
