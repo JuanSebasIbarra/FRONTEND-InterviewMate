@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { es } from '../locales/es'
 import { en } from '../locales/en'
 import type { TranslationKeys } from '../locales/es'
@@ -43,10 +43,10 @@ function storeLanguage(lang: Language) {
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(getStoredLanguage)
 
-  const setLanguage = (lang: Language) => {
+  const setLanguage = useCallback((lang: Language) => {
     setLanguageState(lang)
     storeLanguage(lang)
-  }
+  }, [])
 
   const t = translations[language]
 

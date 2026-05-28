@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { getProfile } from '../services/profileService'
 
@@ -8,8 +8,12 @@ import { getProfile } from '../services/profileService'
  */
 export function LanguageSync() {
   const { setLanguage } = useLanguage()
+  const hasSync = useRef(false)
 
   useEffect(() => {
+    // Only sync once per app lifecycle
+    if (hasSync.current) return
+
     const syncLanguageFromProfile = async () => {
       try {
         const profile = await getProfile()
@@ -22,6 +26,7 @@ export function LanguageSync() {
       }
     }
 
+    hasSync.current = true
     void syncLanguageFromProfile()
   }, [setLanguage])
 
