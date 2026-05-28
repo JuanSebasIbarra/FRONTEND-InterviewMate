@@ -40,6 +40,7 @@ export type ProfileResponse = {
   authProvider: AuthProvider
   roles: string[]
   createdAt: string
+  language: 'ES' | 'EN'
 }
 
 export type UpdateProfileRequest = {
@@ -47,4 +48,5 @@ export type UpdateProfileRequest = {
   email?: string
   perfilProfesional?: string
   profilePictureUrl?: string
+  language?: 'ES' | 'EN'
 }
