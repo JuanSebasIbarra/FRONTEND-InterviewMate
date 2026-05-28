@@ -27,12 +27,12 @@ export function AvatarScene({
       }}
     >
       <Canvas
-        camera={{ position: [0, 0.72, 2.85], fov: 50, near: 0.1, far: 100 }}
+        camera={{ position: [0, 1.0, 1.8], fov: 45, near: 0.1, far: 100 }}
         shadows
         gl={{ alpha: true, antialias: true }}
         style={{ background: 'transparent' }}
         onCreated={({ camera }) => {
-          camera.lookAt(0, 0.55, 0)
+          camera.lookAt(0, 0.85, 0)
         }}
       >
         <ambientLight intensity={0.8} />
@@ -54,7 +54,7 @@ export function AvatarScene({
           <AvatarGLB
             url={modelUrl}
             scale={1}
-            position={[0, -0.8, 0]}
+            position={[0, -0.4, 0]}
             avatarState={avatarState}
           />
         </Suspense>
