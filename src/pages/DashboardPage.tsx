@@ -18,6 +18,7 @@ import type { InterviewSession, InterviewTemplate } from '../models/interview'
 import { getDashboardStats } from '../services/dashboardService'
 import { getMySessions } from '../services/sessionService'
 import { deleteTemplate, getMyTemplates } from '../services/templateService'
+import { APP_VERSION } from '../config/version'
 
 function ensureArray<T>(value: unknown): T[] {
   return Array.isArray(value) ? value : []
@@ -166,9 +167,12 @@ function DashboardPage() {
         <section className="border-zinc-300 bg-stone-50 p-5 sm:p-7 h-full">
           <header className="mb-7 border-b border-zinc-200 pb-5">
             <p className="text-xs uppercase tracking-widest text-zinc-500">Panel principal</p>
-            <h1 className="mt-2 font-serif text-4xl font-normal tracking-[-0.02em] text-zinc-900 sm:text-5xl">
-              Dashboard
-            </h1>
+            <div className="flex items-baseline gap-3">
+              <h1 className="mt-2 font-serif text-4xl font-normal tracking-[-0.02em] text-zinc-900 sm:text-5xl">
+                Dashboard
+              </h1>
+              <span className="text-sm font-medium text-zinc-400">V {APP_VERSION}</span>
+            </div>
           </header>
 
           <article>
