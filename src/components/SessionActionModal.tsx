@@ -1,3 +1,5 @@
+import { useTranslation } from '../contexts/LanguageContext'
+
 type SessionActionModalProps = {
   isOpen: boolean
   sessionType: 'Sesion de estudio' | 'Entrevista'
@@ -17,6 +19,8 @@ function SessionActionModal({
   onContinue,
   onDelete,
 }: SessionActionModalProps) {
+  const t = useTranslation()
+  
   if (!isOpen) return null
 
   return (
@@ -30,13 +34,13 @@ function SessionActionModal({
       >
         <div className="mb-5">
           <h2 className="font-serif text-2xl font-normal tracking-[-0.02em] text-zinc-900">
-            {sessionType}
+            {sessionType === 'Sesion de estudio' ? t.sessions.studySession : t.sessions.interview}
           </h2>
           <p className="mt-2 text-sm text-zinc-600">
-            Creada el <span className="font-medium text-zinc-900">{sessionDate}</span>
+            {t.sessions.sessionCreatedOn} <span className="font-medium text-zinc-900">{sessionDate}</span>
           </p>
           <p className="mt-3 text-sm text-zinc-600">
-            ¿Qué deseas hacer con esta sesión?
+            {t.sessions.whatToDo}
           </p>
         </div>
 
@@ -47,7 +51,7 @@ function SessionActionModal({
             disabled={isDeleting}
             className="w-full rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Continuar sesión
+            {t.sessions.continueSession}
           </button>
           <button
             type="button"
@@ -55,7 +59,7 @@ function SessionActionModal({
             disabled={isDeleting}
             className="w-full rounded-full bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isDeleting ? 'Eliminando...' : 'Eliminar sesión'}
+            {isDeleting ? t.templates.deleting : t.sessions.deleteSession}
           </button>
           <button
             type="button"
@@ -63,7 +67,7 @@ function SessionActionModal({
             disabled={isDeleting}
             className="w-full rounded-full border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Cancelar
+            {t.common.cancel}
           </button>
         </div>
       </div>
