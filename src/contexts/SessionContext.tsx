@@ -34,12 +34,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
     const validationPromise = (async () => {
       try {
+        console.log('[SessionContext] Attempting to verify session (attempt 1/2)')
         await getMe()
+        console.log('[SessionContext] ✓ Session verified successfully')
         setStatus('authenticated')
         return 'authenticated' as const
-      } catch {
-        setStatus('unauthenticated')
-        return 'unauthenticated' as const
+      } catch (error) {
+        console.log('[SessionContext] First attempt failed, retrying in 1.5s...', error)
+        // Retry once after a delay (helps with OAuth cookie timing issues)
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+        try {
+          console.log('[SessionContext] Attempting to verify session (attempt 2/2)')
+          await getMe()
+          console.log('[SessionContext] ✓ Session verified successfully on retry')
+          setStatus('authenticated')
+          return 'authenticated' as const
+        } catch (retryError) {
+          console.error('[SessionContext] ✗ Session verification failed after retry:', retryError)
+          setStatus('unauthenticated')
+          return 'unauthenticated' as const
+        }
       } finally {
         inFlightValidationRef.current = null
       }

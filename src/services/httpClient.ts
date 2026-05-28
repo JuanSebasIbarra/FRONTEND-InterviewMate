@@ -51,7 +51,7 @@ function buildRequestHeaders(init?: RequestInit) {
 }
 
 function isAuthPath(path: string) {
-  return path.startsWith('/auth/')
+  return path.startsWith('/auth/') || path.includes('/auth/')
 }
 
 export class ApiError extends Error {

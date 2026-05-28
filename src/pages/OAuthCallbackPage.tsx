@@ -25,20 +25,46 @@ function OAuthCallbackPage() {
   const [searchParams] = useSearchParams()
 
   useEffect(() => {
-    const token = searchParams.get(OAUTH_CALLBACK_PARAMS.TOKEN)
-    const expiresAt = searchParams.get(OAUTH_CALLBACK_PARAMS.EXPIRES_AT)
-    const error = searchParams.get(OAUTH_CALLBACK_PARAMS.ERROR)
+    const processCallback = async () => {
+      const token = searchParams.get(OAUTH_CALLBACK_PARAMS.TOKEN)
+      const expiresAt = searchParams.get(OAUTH_CALLBACK_PARAMS.EXPIRES_AT)
+      const error = searchParams.get(OAUTH_CALLBACK_PARAMS.ERROR)
 
-    if (error || !token) {
-      navigate('/login', {
-        replace: true,
-        state: { oauthError: error ?? 'authentication_failed' },
+      console.log('[OAuth Callback] Full URL:', window.location.href)
+      console.log('[OAuth Callback] URL params:', { 
+        token: token ? `${token.substring(0, 20)}...` : null, 
+        expiresAt, 
+        error 
       })
-      return
+      console.log('[OAuth Callback] Cookies:', document.cookie)
+
+      if (error) {
+        console.error('[OAuth Callback] Error in callback:', error)
+        navigate('/login', {
+          replace: true,
+          state: { oauthError: error },
+        })
+        return
+      }
+
+      // If backend sends token in URL, save it
+      if (token) {
+        console.log('[OAuth Callback] ✓ Token received in URL, saving...')
+        handleOAuthCallback({ token, expiresAt })
+      } else {
+        console.warn('[OAuth Callback] ⚠ No token in URL, relying on session cookies')
+        console.warn('[OAuth Callback] Note: Cross-site cookies may be blocked by browser')
+      }
+
+      // Longer delay to ensure cookies are propagated (especially for cross-site)
+      console.log('[OAuth Callback] Waiting 1s for cookies to propagate...')
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      console.log('[OAuth Callback] Navigating to dashboard')
+      navigate('/dashboard', { replace: true })
     }
 
-    handleOAuthCallback({ token, expiresAt })
-    navigate('/dashboard', { replace: true })
+    void processCallback()
   }, [navigate, searchParams])
 
   return (
