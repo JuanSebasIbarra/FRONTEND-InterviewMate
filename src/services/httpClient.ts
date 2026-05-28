@@ -2,7 +2,9 @@ import { getAuthToken, clearAuthToken } from '../lib/auth'
 import { buildApiUrl } from '../lib/api'
 import type { ApiErrorPayload, ApiResponse } from '../models/api'
 
-const useCredentials = String(import.meta.env.VITE_USE_CREDENTIALS ?? '').toLowerCase() === 'true'
+// Enabled by default for cookie-based auth (OAuth/session).
+// Set VITE_USE_CREDENTIALS=false only if your backend does not use cookies.
+const useCredentials = String(import.meta.env.VITE_USE_CREDENTIALS ?? 'true').toLowerCase() !== 'false'
 
 function tryParseJson(raw: string) {
   if (!raw) return null
