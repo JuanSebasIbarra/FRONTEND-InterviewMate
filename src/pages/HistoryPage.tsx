@@ -123,7 +123,7 @@ function HistoryPage() {
               <div>
                 <p className="text-xs uppercase tracking-widest text-zinc-500">Panel principal</p>
                 <h1 className="mt-2 font-serif text-4xl font-normal tracking-[-0.02em] text-zinc-900 sm:text-5xl">
-                  History
+                  Historial de plantillas
                 </h1>
                 <p className="mt-3 max-w-2xl text-sm text-zinc-500">
                   Todas tus plantillas ordenadas por actividad reciente para que retomes cualquiera sin perder contexto.
