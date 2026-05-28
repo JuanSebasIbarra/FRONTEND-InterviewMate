@@ -287,7 +287,7 @@ function SessionPage() {
             <article>
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 className="font-serif text-[2rem] font-normal tracking-[-0.02em] text-zinc-900">
-                  Estudio Session
+                  {t.sessions.studySession}
                 </h2>
                 <button
                   type="button"
@@ -295,22 +295,22 @@ function SessionPage() {
                   disabled={!templateId || isCreatingStudy}
                   className="rounded-full bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white transition hover:opacity-80"
                 >
-                  {isCreatingStudy ? 'Iniciando...' : 'Estudiar'}
+                  {isCreatingStudy ? t.common.loading : t.sessions.startStudy}
                 </button>
               </div>
 
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {isLoading && <p className="text-sm text-zinc-600">Cargando sesiones de estudio...</p>}
+                {isLoading && <p className="text-sm text-zinc-600">{t.common.loading}</p>}
 
                 {!isLoading && !errorMessage && studySessions.length === 0 && (
-                  <p className="text-sm text-zinc-600">No hay sesiones de estudio registradas para esta plantilla.</p>
+                  <p className="text-sm text-zinc-600">{t.sessions.noStudySessions}</p>
                 )}
 
                 {!isLoading && !errorMessage && studySessions.map((session) => (
                   <SessionHistoryCard
                     key={session.id}
                     date={formatSessionDate(session.createdAt)}
-                    status="PENDIENTE"
+                    status={t.sessions.status.pending}
                     type="Sesion de estudio"
                     onClick={() => handleOpenStudySessionModal(session)}
                   />
@@ -321,7 +321,7 @@ function SessionPage() {
             <article>
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 className="font-serif text-[2rem] font-normal tracking-[-0.02em] text-zinc-900">
-                  Entrevistas
+                  {t.sessions.interview}
                 </h2>
                 <button
                   type="button"
@@ -329,26 +329,26 @@ function SessionPage() {
                   disabled={!templateId || isCreatingInterview}
                   className="rounded-full bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white transition hover:opacity-80"
                 >
-                  {isCreatingInterview ? 'Iniciando...' : 'Entrevista'}
+                  {isCreatingInterview ? t.common.loading : t.sessions.startInterview}
                 </button>
               </div>
 
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {isLoading && <p className="text-sm text-zinc-600">Cargando sesiones...</p>}
+                {isLoading && <p className="text-sm text-zinc-600">{t.common.loading}</p>}
 
                 {!isLoading && errorMessage && (
                   <p className="text-sm text-red-700">{errorMessage}</p>
                 )}
 
                 {!isLoading && !errorMessage && interviewSessions.length === 0 && (
-                  <p className="text-sm text-zinc-600">No hay sesiones registradas para esta plantilla.</p>
+                  <p className="text-sm text-zinc-600">{t.sessions.noInterviewSessions}</p>
                 )}
 
                 {!isLoading && !errorMessage && interviewSessions.map((session) => (
                   <SessionHistoryCard
                     key={session.id}
                     date={formatSessionDate(session.startedAt ?? session.completedAt)}
-                    status={formatInterviewStatus(session.status)}
+                    status={formatInterviewStatus(session.status, t)}
                     type="Entrevista"
                     onClick={() => handleOpenInterviewSessionModal(session)}
                   />

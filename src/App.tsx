@@ -6,6 +6,7 @@ import { SessionProvider } from './contexts/SessionContext'
 import { clearAuthToken, getAuthToken, saveAuthToken } from './lib/auth'
 import { API_BASE_URL, buildApiUrl } from './lib/api'
 import { logoutUser } from './controllers/authController'
+import { LanguageSync } from './components/LanguageSync'
 
 type User = {
   id: number
@@ -472,6 +473,7 @@ export function LegacyApp() {
 function App() {
   return (
     <SessionProvider>
+      <LanguageSync />
       <RouterProvider router={appRouter} />
     </SessionProvider>
   )
