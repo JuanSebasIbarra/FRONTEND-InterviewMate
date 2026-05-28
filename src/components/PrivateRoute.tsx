@@ -1,37 +1,13 @@
-import { useEffect, useState } from 'react'
 import type { ReactElement } from 'react'
 import { Navigate } from 'react-router-dom'
-import { getMe } from '../services/authService'
+import { useSession } from '../contexts/SessionContext'
 
 type PrivateRouteProps = {
   children: ReactElement
 }
 
 function PrivateRoute({ children }: PrivateRouteProps) {
-  const [status, setStatus] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking')
-
-  useEffect(() => {
-    let active = true
-
-    const validateSession = async () => {
-      try {
-        await getMe()
-        if (active) {
-          setStatus('authenticated')
-        }
-      } catch {
-        if (active) {
-          setStatus('unauthenticated')
-        }
-      }
-    }
-
-    void validateSession()
-
-    return () => {
-      active = false
-    }
-  }, [])
+  const { status } = useSession()
 
   if (status === 'checking') {
     return null

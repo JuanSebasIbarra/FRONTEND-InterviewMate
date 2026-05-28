@@ -20,6 +20,39 @@ export function getMe() {
   return httpRequest<User>('/auth/me')
 }
 
+async function tryLogout(path: string, method: 'POST' | 'GET' = 'POST') {
+  try {
+    const response = await fetch(buildApiUrl(path), {
+      method,
+      credentials: 'include',
+    })
+    return response.ok
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Attempts to invalidate server-side session/cookies.
+ * We try common logout paths because backend deployments may expose
+ * different endpoints depending on security configuration.
+ */
+export async function logoutUser() {
+  const attempts: Array<{ path: string; method?: 'POST' | 'GET' }> = [
+    { path: '/api/v1/auth/logout', method: 'POST' },
+    { path: '/auth/logout', method: 'POST' },
+    { path: '/logout', method: 'POST' },
+    { path: '/logout', method: 'GET' },
+  ]
+
+  for (const attempt of attempts) {
+    const didLogout = await tryLogout(attempt.path, attempt.method)
+    if (didLogout) {
+      return
+    }
+  }
+}
+
 /**
  * Returns the absolute frontend URL that the backend should redirect to
  * after a successful OAuth2 sign-in.

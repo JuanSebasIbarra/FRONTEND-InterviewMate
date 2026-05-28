@@ -5,7 +5,7 @@ import DashboardSidebar from '../components/dashboard/DashboardSidebar'
 import SessionModeModal from '../components/dashboard/SessionModeModal'
 import StatisticsSection from '../components/dashboard/StatisticsSection'
 import TemplateCard from '../components/dashboard/TemplateCard'
-import { clearAuthToken } from '../lib/auth'
+import { logoutUser } from '../controllers/authController'
 import {
   buildDashboardStatsLinkedList,
   getDashboardSignInCount,
@@ -92,9 +92,9 @@ function DashboardPage() {
     }
   }, [])
 
-  const handleLogout = () => {
-    clearAuthToken()
-    navigate('/login')
+  const handleLogout = async () => {
+    await logoutUser()
+    navigate('/login', { replace: true })
   }
 
   const handleAdd = () => {

@@ -4,7 +4,7 @@ import DeleteTemplateModal from '../components/DeleteTemplateModal'
 import DashboardSidebar from '../components/dashboard/DashboardSidebar'
 import SessionModeModal from '../components/dashboard/SessionModeModal'
 import TemplateCard from '../components/dashboard/TemplateCard'
-import { clearAuthToken } from '../lib/auth'
+import { logoutUser } from '../controllers/authController'
 import { formatTemplateLastActivity, sortTemplatesByRecentActivity } from '../lib/templateActivity'
 import type { InterviewTemplate } from '../models/interview'
 import { deleteTemplate, getMyTemplates } from '../services/templateService'
@@ -50,9 +50,9 @@ function HistoryPage() {
     }
   }, [])
 
-  const handleLogout = () => {
-    clearAuthToken()
-    navigate('/login')
+  const handleLogout = async () => {
+    await logoutUser()
+    navigate('/login', { replace: true })
   }
 
   const handleAdd = () => {
