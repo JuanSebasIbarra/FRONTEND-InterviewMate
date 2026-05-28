@@ -6,6 +6,7 @@ type TemplateCardProps = {
   onOpen?: () => void
   secondaryActionLabel?: string
   onDelete?: () => void
+  newLabel?: string
 }
 
 function TemplateCard({
@@ -16,6 +17,7 @@ function TemplateCard({
   onOpen,
   secondaryActionLabel = 'Ver mas',
   onDelete,
+  newLabel = 'Nuevo',
 }: TemplateCardProps) {
   return (
     <article className="flex flex-col border border-zinc-300 bg-white p-4 shadow-sm hover:bg-black/5 transition rounded-lg">
@@ -54,7 +56,7 @@ function TemplateCard({
             onClick={onAdd}
             className="bg-zinc-900 px-4 py-2 text-xs font-medium text-white transition hover:opacity-80"
           >
-            Nuevo
+            {newLabel}
           </button>
           <button
             type="button"

@@ -133,6 +133,11 @@ type BuildDashboardStatsInput = {
   studyCompleted: number
   interviewsDone: number
   signInAndPractice: number
+  labels: {
+    studySessionsCompleted: string
+    interviewsDone: string
+    signInAndPracticeLabel: string
+  }
 }
 
 export function buildDashboardStatsLinkedList(input: BuildDashboardStatsInput) {
@@ -140,21 +145,21 @@ export function buildDashboardStatsLinkedList(input: BuildDashboardStatsInput) {
 
   linkedList.append({
     key: 'studyCompleted',
-    label: 'Sesiones de estudio completadas',
+    label: input.labels.studySessionsCompleted,
     value: Math.max(0, input.studyCompleted),
     color: '#2563eb',
   })
 
   linkedList.append({
     key: 'interviewsDone',
-    label: 'Entrevistas realizadas',
+    label: input.labels.interviewsDone,
     value: Math.max(0, input.interviewsDone),
     color: '#dc2626',
   })
 
   linkedList.append({
     key: 'signInAndPractice',
-    label: 'Inicios de sesion y practica',
+    label: input.labels.signInAndPracticeLabel,
     value: Math.max(0, input.signInAndPractice),
     color: '#eab308',
   })

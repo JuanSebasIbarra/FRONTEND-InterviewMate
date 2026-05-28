@@ -6,6 +6,7 @@ import SessionModeModal from '../components/dashboard/SessionModeModal'
 import StatisticsSection from '../components/dashboard/StatisticsSection'
 import TemplateCard from '../components/dashboard/TemplateCard'
 import { logoutUser } from '../controllers/authController'
+import { useTranslation } from '../contexts/LanguageContext'
 import {
   buildDashboardStatsLinkedList,
   getDashboardSignInCount,
@@ -26,6 +27,7 @@ function ensureArray<T>(value: unknown): T[] {
 
 function DashboardPage() {
   const navigate = useNavigate()
+  const t = useTranslation()
   const [templates, setTemplates] = useState<InterviewTemplate[]>([])
   const [sessions, setSessions] = useState<InterviewSession[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -53,8 +55,13 @@ function DashboardPage() {
       studyCompleted: completedStudySessions,
       interviewsDone,
       signInAndPractice,
+      labels: {
+        studySessionsCompleted: t.dashboard.studySessionsCompleted,
+        interviewsDone: t.dashboard.interviewsDone,
+        signInAndPracticeLabel: t.dashboard.signInAndPracticeLabel,
+      },
     })
-  }, [dashboardSignInCount, sessions, studyModulesHistory, stats])
+  }, [dashboardSignInCount, sessions, studyModulesHistory, stats, t])
 
   useEffect(() => {
     setDashboardSignInCount(incrementDashboardSignInCount())
@@ -77,7 +84,7 @@ function DashboardPage() {
         setStats(statsPayload)
       } catch (error) {
         if (!isMounted) return
-        const message = error instanceof Error ? error.message : 'No se pudieron cargar las plantillas.'
+        const message = error instanceof Error ? error.message : t.errors.loadingTemplates
         setErrorMessage(message)
       } finally {
         if (isMounted) {
@@ -152,7 +159,7 @@ function DashboardPage() {
       setTemplates((currentTemplates) => currentTemplates.filter((template) => template.id !== templatePendingDeletion.id))
       setTemplatePendingDeletion(null)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo eliminar la plantilla.'
+      const message = error instanceof Error ? error.message : t.errors.deletingTemplate
       setErrorMessage(message)
     } finally {
       setIsDeletingTemplate(false)
@@ -166,10 +173,10 @@ function DashboardPage() {
       <main className="w-full h-full sm:h-full sm:lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-6">
         <section className="border-zinc-300 bg-stone-50 p-5 sm:p-7 h-full">
           <header className="mb-7 border-b border-zinc-200 pb-5">
-            <p className="text-xs uppercase tracking-widest text-zinc-500">Panel principal</p>
+            <p className="text-xs uppercase tracking-widest text-zinc-500">{t.dashboard.title}</p>
             <div className="flex items-baseline gap-3">
               <h1 className="mt-2 font-serif text-4xl font-normal tracking-[-0.02em] text-zinc-900 sm:text-5xl">
-                Dashboard
+                {t.nav.dashboard}
               </h1>
               <span className="text-sm font-medium text-zinc-400">V {APP_VERSION}</span>
             </div>
@@ -179,10 +186,10 @@ function DashboardPage() {
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <h2 className="font-serif text-[2rem] font-normal tracking-[-0.02em] text-zinc-900">
-                  Plantillas recientes
+                  {t.dashboard.recentTemplates}
                 </h2>
                 <p className="mt-1 text-sm text-zinc-500">
-                  Mostrando las tres plantillas con actividad mas reciente.
+                  {t.dashboard.recentTemplatesSubtitle}
                 </p>
               </div>
               <button
@@ -190,13 +197,13 @@ function DashboardPage() {
                 onClick={handleAdd}
                 className="rounded-full bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white transition hover:opacity-80"
               >
-                Nueva plantilla
+                {t.dashboard.newTemplateButton}
               </button>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {isLoading && (
-                <p className="text-sm text-zinc-600">Cargando plantillas...</p>
+                <p className="text-sm text-zinc-600">{t.dashboard.loadingTemplates}</p>
               )}
 
               {!isLoading && errorMessage && (
@@ -204,19 +211,20 @@ function DashboardPage() {
               )}
 
               {!isLoading && !errorMessage && recentTemplates.length === 0 && (
-                <p className="text-sm text-zinc-600">Aun no tienes plantillas creadas.</p>
+                <p className="text-sm text-zinc-600">{t.dashboard.noTemplatesCreated}</p>
               )}
 
               {!isLoading && !errorMessage && recentTemplates.map((template) => (
                 <TemplateCard
                   key={template.id}
                   name={`${template.position} - ${template.enterprise}`}
-                  subtitle={`Ultima actividad: ${formatTemplateLastActivity(template)}`}
+                  subtitle={`${t.dashboard.lastActivity}: ${formatTemplateLastActivity(template)}`}
                   onAdd={() => handleOpenSessionModeModal(template)}
                   onHistory={() => handleOpenTemplate(template.id)}
                   onOpen={() => handleOpenTemplate(template.id)}
-                  secondaryActionLabel="Abrir"
+                  secondaryActionLabel={t.dashboard.open}
                   onDelete={() => handleRequestDeleteTemplate(template)}
+                  newLabel={t.dashboard.new}
                 />
               ))}
             </div>
@@ -225,9 +233,9 @@ function DashboardPage() {
               <div className="mt-6 rounded-2xl border border-zinc-300 bg-white px-5 py-4 shadow-sm">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-widest text-zinc-400">History</p>
+                    <p className="text-xs uppercase tracking-widest text-zinc-400">{t.dashboard.historyUppercase}</p>
                     <p className="mt-1 text-sm text-zinc-600">
-                      Tienes {sortedTemplates.length - recentTemplates.length} plantilla{sortedTemplates.length - recentTemplates.length === 1 ? '' : 's'} adicional{sortedTemplates.length - recentTemplates.length === 1 ? '' : 'es'} en tu historial.
+                      Tienes {sortedTemplates.length - recentTemplates.length} {sortedTemplates.length - recentTemplates.length === 1 ? t.dashboard.additionalTemplatesSingular : t.dashboard.additionalTemplatesPlural} en tu historial.
                     </p>
                   </div>
                   <button
@@ -235,7 +243,7 @@ function DashboardPage() {
                     onClick={handleOpenHistory}
                     className="w-full rounded-full border border-zinc-300 bg-white px-5 py-2.5 text-sm font-medium text-zinc-800 transition hover:bg-zinc-100 md:w-auto"
                   >
-                    Ver historial
+                    {t.dashboard.viewHistory}
                   </button>
                 </div>
               </div>

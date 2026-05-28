@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { DashboardStatsDoublyLinkedList } from '../../lib/dashboardStats'
+import { useTranslation } from '../../contexts/LanguageContext'
 
 type StatisticsSectionProps = {
   statsLinkedList: DashboardStatsDoublyLinkedList
@@ -7,23 +8,8 @@ type StatisticsSectionProps = {
 
 type ChartView = 'bar' | 'pie'
 
-function getFriendlySummary(label: string) {
-  if (label === 'Sesiones de estudio completadas') {
-    return 'Aqui ves cuantas sesiones de estudio terminaste de principio a fin.'
-  }
-
-  if (label === 'Entrevistas realizadas') {
-    return 'Este numero te muestra cuantas entrevistas ya completaste en la plataforma.'
-  }
-
-  if (label === 'Inicios de sesion y practica') {
-    return 'Este dato refleja los dias en los que entraste a tu cuenta para practicar.'
-  }
-
-  return 'Este valor resume tu actividad reciente en esta seccion.'
-}
-
 function StatisticsSection({ statsLinkedList }: StatisticsSectionProps) {
+  const t = useTranslation()
   const [chartView, setChartView] = useState<ChartView>('bar')
 
   const stats = useMemo(() => statsLinkedList.toArray(), [statsLinkedList])
@@ -60,9 +46,9 @@ function StatisticsSection({ statsLinkedList }: StatisticsSectionProps) {
     <section className="mt-10 rounded-2xl border border-zinc-300 bg-white p-5 shadow-sm sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-widest text-zinc-500">Estadisticas</p>
+          <p className="text-xs uppercase tracking-widest text-zinc-500">{t.dashboard.statisticsUppercase}</p>
           <h2 className="mt-1 font-serif text-3xl font-normal tracking-[-0.02em] text-zinc-900">
-            Rendimiento personal
+            {t.dashboard.personalPerformance}
           </h2>
         </div>
 
@@ -74,7 +60,7 @@ function StatisticsSection({ statsLinkedList }: StatisticsSectionProps) {
               chartView === 'bar' ? 'bg-blue-600 text-white' : 'text-zinc-700 hover:bg-zinc-200'
             }`}
           >
-            Barras
+            {t.dashboard.barChart}
           </button>
           <button
             type="button"
@@ -83,7 +69,7 @@ function StatisticsSection({ statsLinkedList }: StatisticsSectionProps) {
               chartView === 'pie' ? 'bg-red-600 text-white' : 'text-zinc-700 hover:bg-zinc-200'
             }`}
           >
-            Pastel
+            {t.dashboard.pieChart}
           </button>
         </div>
       </div>
@@ -139,21 +125,32 @@ function StatisticsSection({ statsLinkedList }: StatisticsSectionProps) {
         </div>
 
         <aside className="rounded-xl border border-zinc-200 bg-white p-4">
-          <h3 className="font-serif text-2xl text-zinc-900">Resumen</h3>
+          <h3 className="font-serif text-2xl text-zinc-900">{t.dashboard.summary}</h3>
           <p className="mt-1 text-sm text-zinc-600">
-            Aqui tienes una explicacion simple de cada estadistica para entender tu avance rapido.
+            {t.dashboard.summaryDescription}
           </p>
 
           <div className="mt-4 space-y-3">
-            {linkedStats.map((node) => (
-              <article key={`node-${node.key}`} className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm">
-                <p className="font-semibold text-zinc-800">{node.label}</p>
-                <p className="text-zinc-600">{getFriendlySummary(node.label)}</p>
-                <p className="mt-1 text-zinc-700">Total actual: {node.value}</p>
-                <p className="text-zinc-500">Antes de esta metrica: {node.previousLabel ?? 'No aplica'}</p>
-                <p className="text-zinc-500">Despues de esta metrica: {node.nextLabel ?? 'No aplica'}</p>
-              </article>
-            ))}
+            {linkedStats.map((node) => {
+              let description = t.dashboard.defaultStatsDescription
+              if (node.key === 'studyCompleted') {
+                description = t.dashboard.studySessionsCompletedDescription
+              } else if (node.key === 'interviewsDone') {
+                description = t.dashboard.interviewsDoneDescription
+              } else if (node.key === 'signInAndPractice') {
+                description = t.dashboard.signInAndPracticeDescription
+              }
+
+              return (
+                <article key={`node-${node.key}`} className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm">
+                  <p className="font-semibold text-zinc-800">{node.label}</p>
+                  <p className="text-zinc-600">{description}</p>
+                  <p className="mt-1 text-zinc-700">{t.dashboard.currentTotal}: {node.value}</p>
+                  <p className="text-zinc-500">{t.dashboard.beforeThisMetric}: {node.previousLabel ?? t.dashboard.notApplicable}</p>
+                  <p className="text-zinc-500">{t.dashboard.afterThisMetric}: {node.nextLabel ?? t.dashboard.notApplicable}</p>
+                </article>
+              )
+            })}
           </div>
         </aside>
       </div>
