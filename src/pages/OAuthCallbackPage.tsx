@@ -56,6 +56,29 @@ function OAuthCallbackPage() {
         console.warn('[OAuth Callback] Note: Cross-site cookies may be blocked by browser')
       }
 
+      // If no token, warn about potential issues
+      if (!token) {
+        const hasCookie = document.cookie.includes('JSESSIONID')
+        console.warn('[OAuth Callback] Backend authentication method:', hasCookie ? 'Session cookies' : 'Unknown')
+        
+        if (!hasCookie) {
+          console.error('[OAuth Callback] ⚠️ CRITICAL: No token in URL and no session cookie found')
+          console.error('[OAuth Callback] The backend must either:')
+          console.error('[OAuth Callback]   1. Send JWT token in URL: /auth/callback?token=<JWT>')
+          console.error('[OAuth Callback]   2. Set cookies with SameSite=None; Secure for cross-site')
+          
+          // Show error to user
+          navigate('/login', {
+            replace: true,
+            state: { 
+              oauthError: 'cookie_blocked',
+              errorMessage: 'El navegador bloqueó las cookies de autenticación. Por favor, contacta al administrador o usa el login tradicional.'
+            },
+          })
+          return
+        }
+      }
+
       // Longer delay to ensure cookies are propagated (especially for cross-site)
       console.log('[OAuth Callback] Waiting 1s for cookies to propagate...')
       await new Promise((resolve) => setTimeout(resolve, 1000))
