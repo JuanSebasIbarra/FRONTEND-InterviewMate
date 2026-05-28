@@ -1,3 +1,5 @@
+import { useTranslation } from '../../contexts/LanguageContext'
+
 type SessionModeModalProps = {
   isOpen: boolean
   templateName: string
@@ -13,6 +15,7 @@ function SessionModeModal({
   onStudy,
   onInterview,
 }: SessionModeModalProps) {
+  const t = useTranslation()
   if (!isOpen) return null
 
   return (
@@ -26,7 +29,7 @@ function SessionModeModal({
       >
         {/* Header */}
         <div className="mb-6 border-b border-zinc-100 pb-4">
-          <p className="text-xs uppercase tracking-widest text-zinc-400">Nueva sesión</p>
+          <p className="text-xs uppercase tracking-widest text-zinc-400">{t.sessions.newSession}</p>
           <h2 className="mt-1 font-serif text-2xl font-normal tracking-[-0.02em] text-zinc-900">
             {templateName}
           </h2>
@@ -45,9 +48,9 @@ function SessionModeModal({
             </div>
             <div className="text-center">
               <p className="font-serif text-lg font-normal tracking-tight text-zinc-900 group-hover:text-[#638ea3]">
-                Sesión de Estudio
+                {t.sessions.studySessionFull}
               </p>
-              <p className="mt-1 text-xs text-zinc-500">Practica a tu ritmo</p>
+              <p className="mt-1 text-xs text-zinc-500">{t.sessions.practiceAtYourPace}</p>
             </div>
           </button>
 
@@ -62,9 +65,9 @@ function SessionModeModal({
             </div>
             <div className="text-center">
               <p className="font-serif text-lg font-normal tracking-tight text-zinc-900">
-                Entrevista
+                {t.sessions.interview}
               </p>
-              <p className="mt-1 text-xs text-zinc-500">Simula una entrevista real</p>
+              <p className="mt-1 text-xs text-zinc-500">{t.sessions.simulateRealInterview}</p>
             </div>
           </button>
         </div>
@@ -74,7 +77,7 @@ function SessionModeModal({
           type="button"
           onClick={onClose}
           className="absolute right-4 top-4 rounded-md p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
-          aria-label="Cerrar"
+          aria-label={t.common.close}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

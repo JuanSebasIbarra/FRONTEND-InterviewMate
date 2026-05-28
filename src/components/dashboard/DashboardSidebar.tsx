@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import InterviewMateIcon from '../../assets/interviewmate-main-logo.png'
+import { useTranslation } from '../../contexts/LanguageContext'
 
 type DashboardSidebarProps = {
   onLogout: () => void
@@ -8,6 +9,7 @@ type DashboardSidebarProps = {
 
 function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
   const location = useLocation()
+  const t = useTranslation()
   const searchParams = new URLSearchParams(location.search)
   const activeSettingsSection = searchParams.get('section') ?? 'personal'
   const [isConfigOpen, setIsConfigOpen] = useState(location.pathname === '/settings')
@@ -35,14 +37,14 @@ function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
           to="/dashboard"
           className={`w-full border-b border-black/75 px-4 py-3 text-left text-sm rounded-t-md text-zinc-700 transition hover:scale-105 hover:bg-interviewmate-blue/25 ${location.pathname === '/dashboard' ? 'bg-interviewmate-blue/15 font-medium' : ''}`}
         >
-          Dashboard
+          {t.nav.dashboard}
         </Link>
 
         <Link
           to="/history"
           className={`w-full border-b border-black/75 px-4 py-3 text-left text-sm rounded-t-md text-zinc-700 transition hover:scale-105 hover:bg-interviewmate-blue/25 ${location.pathname === '/history' ? 'bg-interviewmate-blue/15 font-medium' : ''}`}
         >
-          Historial
+          {t.nav.history}
         </Link>
 
         <div className="w-full">
@@ -51,7 +53,7 @@ function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
             onClick={toggleConfig}
             className={`w-full border-b border-black/75 px-4 py-3 text-left text-sm rounded-t-md text-zinc-700 transition hover:scale-105 hover:bg-interviewmate-blue/25 flex items-center justify-between ${location.pathname === '/settings' ? 'bg-interviewmate-blue/15 font-medium' : ''}`}
           >
-            <span>Configuración</span>
+            <span>{t.nav.settings}</span>
             <svg
               className={`w-4 h-4 transition-transform ${isConfigOpen ? 'rotate-180' : ''}`}
               fill="none"
@@ -67,13 +69,13 @@ function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
                 to="/settings?section=personal"
                 className={`block w-full px-8 py-2.5 text-left text-sm text-zinc-600 transition hover:bg-interviewmate-blue/15 ${location.pathname === '/settings' && activeSettingsSection === 'personal' ? 'bg-interviewmate-blue/25 font-medium text-zinc-900' : ''}`}
               >
-                Información personal
+                {t.settings.personalInfo}
               </Link>
               <Link
                 to="/settings?section=security"
                 className={`block w-full px-8 py-2.5 text-left text-sm text-zinc-600 transition hover:bg-interviewmate-blue/15 ${location.pathname === '/settings' && activeSettingsSection === 'security' ? 'bg-interviewmate-blue/25 font-medium text-zinc-900' : ''}`}
               >
-                Seguridad y acceso
+                {t.settings.security}
               </Link>
             </div>
           )}
@@ -84,7 +86,7 @@ function DashboardSidebar({ onLogout }: DashboardSidebarProps) {
           onClick={onLogout}
           className="w-full border-b border-black/75 px-4 py-3 text-left text-sm rounded-t-md text-red-600 transition hover:scale-105 hover:bg-red-50"
         >
-          Cerrar sesión
+          {t.nav.logout}
         </button>
       </div>
     </aside>
