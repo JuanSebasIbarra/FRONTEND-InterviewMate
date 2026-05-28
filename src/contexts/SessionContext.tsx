@@ -37,9 +37,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         await getMe()
         setStatus('authenticated')
         return 'authenticated' as const
-      } catch {
-        setStatus('unauthenticated')
-        return 'unauthenticated' as const
+      } catch (error) {
+        // Retry once after a short delay (helps with OAuth cookie timing)
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        try {
+          await getMe()
+          setStatus('authenticated')
+          return 'authenticated' as const
+        } catch {
+          setStatus('unauthenticated')
+          return 'unauthenticated' as const
+        }
       } finally {
         inFlightValidationRef.current = null
       }

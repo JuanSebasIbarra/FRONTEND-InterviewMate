@@ -25,20 +25,38 @@ function OAuthCallbackPage() {
   const [searchParams] = useSearchParams()
 
   useEffect(() => {
-    const token = searchParams.get(OAUTH_CALLBACK_PARAMS.TOKEN)
-    const expiresAt = searchParams.get(OAUTH_CALLBACK_PARAMS.EXPIRES_AT)
-    const error = searchParams.get(OAUTH_CALLBACK_PARAMS.ERROR)
+    const processCallback = async () => {
+      const token = searchParams.get(OAUTH_CALLBACK_PARAMS.TOKEN)
+      const expiresAt = searchParams.get(OAUTH_CALLBACK_PARAMS.EXPIRES_AT)
+      const error = searchParams.get(OAUTH_CALLBACK_PARAMS.ERROR)
 
-    if (error || !token) {
-      navigate('/login', {
-        replace: true,
-        state: { oauthError: error ?? 'authentication_failed' },
-      })
-      return
+      console.log('[OAuth Callback] URL params:', { token: token ? '***' : null, expiresAt, error })
+
+      if (error) {
+        console.error('[OAuth Callback] Error in callback:', error)
+        navigate('/login', {
+          replace: true,
+          state: { oauthError: error },
+        })
+        return
+      }
+
+      // If backend sends token in URL, save it
+      if (token) {
+        console.log('[OAuth Callback] Saving token from URL')
+        handleOAuthCallback({ token, expiresAt })
+      } else {
+        console.log('[OAuth Callback] No token in URL, using session cookies')
+      }
+
+      // Small delay to ensure cookies are properly set
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      console.log('[OAuth Callback] Navigating to dashboard')
+      navigate('/dashboard', { replace: true })
     }
 
-    handleOAuthCallback({ token, expiresAt })
-    navigate('/dashboard', { replace: true })
+    void processCallback()
   }, [navigate, searchParams])
 
   return (
