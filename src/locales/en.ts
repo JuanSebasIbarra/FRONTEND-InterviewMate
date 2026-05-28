@@ -172,6 +172,14 @@ export const en: TranslationKeys = {
   history: {
     title: 'Template history',
     subtitle: 'All your templates sorted by recent activity so you can resume any without losing context.',
+    mainPanel: 'Main panel',
+    newTemplate: 'New template',
+    templateCount: 'template',
+    templatesCount: 'templates',
+    loadingHistory: 'Loading history...',
+    noTemplatesYet: 'You have no templates registered in your history yet.',
+    lastActivity: 'Last activity',
+    open: 'Open',
   },
 
   // Errors

@@ -170,6 +170,14 @@ export const es = {
   history: {
     title: 'Historial de plantillas',
     subtitle: 'Todas tus plantillas ordenadas por actividad reciente para que retomes cualquiera sin perder contexto.',
+    mainPanel: 'Panel principal',
+    newTemplate: 'Nueva plantilla',
+    templateCount: 'plantilla',
+    templatesCount: 'plantillas',
+    loadingHistory: 'Cargando historial...',
+    noTemplatesYet: 'Aun no tienes plantillas registradas en tu historial.',
+    lastActivity: 'Ultima actividad',
+    open: 'Abrir',
   },
 
   // Errors
