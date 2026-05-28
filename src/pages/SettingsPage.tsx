@@ -8,12 +8,15 @@ import {
   saveSecurityData,
   type SettingsData,
 } from '../controllers/settingsController'
+import { useLanguage, useTranslation } from '../contexts/LanguageContext'
 
 type Section = 'personal' | 'security'
 
 function SettingsPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { setLanguage: setContextLanguage } = useLanguage()
+  const t = useTranslation()
   const [activeSection, setActiveSection] = useState<Section>(() => {
     const param = searchParams.get('section')
     return param === 'security' ? param : 'personal'
@@ -73,6 +76,7 @@ function SettingsPage() {
     setLastName(data.local.lastName)
     setPerfilProfesional(data.perfilProfesional)
     setLanguage(data.language)
+    setContextLanguage(data.language)
     setAvatarPreview(data.local.avatarDataUrl)
     setUsername(data.username)
     setEmail(data.email)
@@ -102,12 +106,17 @@ function SettingsPage() {
       const updated = await savePersonalInfo({ firstName, lastName, avatarFile, perfilProfesional, language })
       applyData(updated)
       setAvatarFile(null)
-      setPersonalSuccess('Información personal actualizada.')
+      setPersonalSuccess(t.settings.personalInfoUpdated)
     } catch (err) {
       setPersonalError((err as Error).message)
     } finally {
       setSavingPersonal(false)
     }
+  }
+
+  const handleLanguageChange = (newLang: 'ES' | 'EN') => {
+    setLanguage(newLang)
+    setContextLanguage(newLang)
   }
 
   const onSaveSecurity = async () => {
@@ -128,7 +137,7 @@ function SettingsPage() {
       )
       setNewPassword('')
       setConfirmPassword('')
-      setSecuritySuccess('Datos de seguridad actualizados correctamente.')
+      setSecuritySuccess(t.settings.securityUpdated)
     } catch (err) {
       setSecurityError((err as Error).message)
     } finally {
@@ -147,7 +156,7 @@ function SettingsPage() {
   if (loading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-stone-100">
-        <p className="text-sm text-zinc-500">Cargando perfil...</p>
+        <p className="text-sm text-zinc-500">{t.common.loading}</p>
       </div>
     )
   }
@@ -309,12 +318,12 @@ function SettingsPage() {
         <div className="st-root st flex-1">
           <main className="st-main">
             <header className="mb-4 border-b border-zinc-200 pb-5">
-              <p className="text-xs uppercase tracking-widest text-zinc-500">Panel principal</p>
+              <p className="text-xs uppercase tracking-widest text-zinc-500">{t.nav.dashboard}</p>
               <h1 className="mt-2 font-serif text-4xl font-normal tracking-[-0.02em] text-zinc-900 sm:text-5xl">
-                Configuración
+                {t.settings.title}
               </h1>
               <p className="st-main-sub">
-                Administra tu información personal y seguridad desde un único panel
+                {t.settings.subtitle}
               </p>
             </header>
 
@@ -324,9 +333,9 @@ function SettingsPage() {
               {activeSection === 'personal' && (
                 <>
                   <div>
-                    <div className="st-section-title">Información personal</div>
+                    <div className="st-section-title">{t.settings.personalInfo}</div>
                     <div className="st-section-sub">
-                      Administra tu foto, nombres y descripción profesional.
+                      {t.settings.personalInfoSubtitle}
                     </div>
                   </div>
 
@@ -337,13 +346,13 @@ function SettingsPage() {
                     <div className="st-avatar-row">
                       <div className="st-avatar-preview">
                         {avatarPreview ? (
-                          <img src={avatarPreview} alt="Foto de perfil" />
+                          <img src={avatarPreview} alt={t.settings.profilePicture} />
                         ) : (
                           <span>{avatarInitial}</span>
                         )}
                       </div>
                       <label className="st-label">
-                        Foto de perfil
+                        {t.settings.profilePicture}
                         <input
                           className="st-file"
                           type="file"
@@ -355,45 +364,45 @@ function SettingsPage() {
 
                     <div className="st-grid-two">
                       <label className="st-label">
-                        Nombres
+                        {t.settings.firstName}
                         <input
                           className="st-input"
                           value={firstName}
                           onChange={(e) => setFirstName(e.target.value)}
-                          placeholder="Ej. Sebastián"
+                          placeholder={t.settings.firstNamePlaceholder}
                         />
                       </label>
                       <label className="st-label">
-                        Apellidos
+                        {t.settings.lastName}
                         <input
                           className="st-input"
                           value={lastName}
                           onChange={(e) => setLastName(e.target.value)}
-                          placeholder="Ej. Ibarra"
+                          placeholder={t.settings.lastNamePlaceholder}
                         />
                       </label>
                     </div>
 
                     <label className="st-label">
-                      Perfil profesional
+                      {t.settings.professionalProfile}
                       <textarea
                         className="st-textarea"
                         rows={6}
                         value={perfilProfesional}
                         onChange={(e) => setPerfilProfesional(e.target.value)}
-                        placeholder="Describe tu experiencia, stack y objetivos profesionales"
+                        placeholder={t.settings.professionalProfilePlaceholder}
                       />
                     </label>
 
                     <label className="st-label">
-                      Idioma de las entrevistas
+                      {t.settings.interviewLanguage}
                       <select
                         className="st-select"
                         value={language}
-                        onChange={(e) => setLanguage(e.target.value as 'ES' | 'EN')}
+                        onChange={(e) => handleLanguageChange(e.target.value as 'ES' | 'EN')}
                       >
-                        <option value="ES">🇪🇸 Español</option>
-                        <option value="EN">🇬🇧 English</option>
+                        <option value="ES">🇪🇸 {t.settings.spanish}</option>
+                        <option value="EN">🇬🇧 {t.settings.english}</option>
                       </select>
                     </label>
 
@@ -403,7 +412,7 @@ function SettingsPage() {
                       onClick={onSavePersonal}
                       disabled={savingPersonal}
                     >
-                      {savingPersonal ? 'Guardando...' : 'Guardar información personal'}
+                      {savingPersonal ? t.settings.saving : t.settings.savePersonalInfo}
                     </button>
                   </div>
                 </>
@@ -412,9 +421,9 @@ function SettingsPage() {
               {activeSection === 'security' && (
                 <>
                   <div>
-                    <div className="st-section-title">Seguridad</div>
+                    <div className="st-section-title">{t.settings.security}</div>
                     <div className="st-section-sub">
-                      Actualiza tu usuario, correo vinculado y contraseña.
+                      {t.settings.securitySubtitle}
                     </div>
                   </div>
 
@@ -423,43 +432,43 @@ function SettingsPage() {
 
                   <div className="st-stack">
                     <label className="st-label">
-                      Usuario
+                      {t.auth.username}
                       <input
                         className="st-input"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Nombre de usuario"
+                        placeholder={t.auth.username}
                       />
                     </label>
 
                     <label className="st-label">
-                      Correo vinculado
+                      {t.settings.linkedEmail}
                       <input
                         className="st-input"
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="correo@ejemplo.com"
+                        placeholder={t.settings.emailPlaceholder}
                       />
                     </label>
 
                     <div className="st-grid-two">
                       <label className="st-label">
-                        Nueva contraseña
+                        {t.settings.newPassword}
                         <input
                           className="st-input"
                           type="password"
                           onChange={(e) => setNewPassword(e.target.value)}
-                          placeholder="Dejar vacío para no cambiar"
+                          placeholder={t.settings.newPasswordPlaceholder}
                         />
                       </label>
                       <label className="st-label">
-                        Confirmar contraseña
+                        {t.settings.confirmNewPassword}
                         <input
                           className="st-input"
                           type="password"
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="Repetir nueva contraseña"
+                          placeholder={t.settings.confirmPasswordPlaceholder}
                         />
                       </label>
                     </div>
@@ -472,7 +481,7 @@ function SettingsPage() {
                         savingSecurity || !username.trim() || !email.trim()
                       }
                     >
-                      {savingSecurity ? 'Guardando...' : 'Guardar cambios'}
+                      {savingSecurity ? t.settings.saving : t.settings.saveChanges}
                     </button>
                   </div>
                 </>

@@ -11,6 +11,7 @@ import { ApiError } from '../services/httpClient'
 import { beginSession, createSession, deleteSession, getSessionsByTemplate } from '../services/sessionService'
 import { deleteStudySession, getMyStudySessions, startStudy } from '../services/studyService'
 import { getTemplateById } from '../services/templateService'
+import { useTranslation } from '../contexts/LanguageContext'
 
 function getAiErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.status === 503) {
@@ -37,16 +38,17 @@ function formatSessionDate(value?: string) {
   }).format(parsedDate)
 }
 
-function formatInterviewStatus(status: InterviewSession['status']) {
-  if (status === 'COMPLETED') return 'COMPLETADO'
-  if (status === 'ABANDONED') return 'ABANDONADO'
-  return 'PENDIENTE'
+function formatInterviewStatus(status: InterviewSession['status'], t: ReturnType<typeof useTranslation>) {
+  if (status === 'COMPLETED') return t.sessions.status.completed
+  if (status === 'ABANDONED') return t.sessions.status.abandoned
+  return t.sessions.status.pending
 }
 
 function SessionPage() {
   const navigate = useNavigate()
   const { templateId } = useParams<{ templateId: string }>()
   const [searchParams] = useSearchParams()
+  const t = useTranslation()
   const [interviewSessions, setInterviewSessions] = useState<InterviewSession[]>([])
   const [studySessions, setStudySessions] = useState<StudySessionSummary[]>([])
   const [template, setTemplate] = useState<InterviewTemplate | null>(null)
@@ -230,16 +232,16 @@ function SessionPage() {
             </div>
             <div>
               <p className="font-serif text-2xl font-normal tracking-[-0.02em] text-zinc-900">
-                La IA está generando tus preguntas de entrevista
+                {t.interview.generating}
               </p>
               <p className="mt-2 text-sm text-zinc-500">
-                Analizando la plantilla y preparando preguntas personalizadas...
+                {t.interview.analyzingTemplate}
               </p>
             </div>
             <div className="flex gap-2 mt-2">
-              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">Preguntas contextuales</span>
-              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">Evaluación por IA</span>
-              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">Personalizadas para ti</span>
+              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">{t.interview.contextualQuestions}</span>
+              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">{t.interview.aiEvaluation}</span>
+              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">{t.study.personalizedForYou}</span>
             </div>
           </div>
         </div>
@@ -253,16 +255,16 @@ function SessionPage() {
             </div>
             <div>
               <p className="font-serif text-2xl font-normal tracking-[-0.02em] text-zinc-900">
-                La IA está generando tus preguntas
+                {t.study.generating}
               </p>
               <p className="mt-2 text-sm text-zinc-500">
-                Analizando el tema y preparando una sesión personalizada...
+                {t.study.analyzingTopic}
               </p>
             </div>
             <div className="flex gap-2 mt-2">
-              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">Dificultad adaptada</span>
-              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">Preguntas únicas</span>
-              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">Personalizadas para ti</span>
+              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">{t.study.difficultyAdapted}</span>
+              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">{t.study.uniqueQuestions}</span>
+              <span className="rounded-full bg-zinc-100 border border-zinc-200 px-3 py-1 text-xs text-zinc-500">{t.study.personalizedForYou}</span>
             </div>
           </div>
         </div>
@@ -274,7 +276,7 @@ function SessionPage() {
         <section className="border-zinc-300 bg-stone-50 p-5 sm:p-7 h-full">
           <header className="mb-7 border-b border-zinc-200 pb-5">
             <p className="text-xs uppercase tracking-widest text-zinc-500">
-              Panel de sesiones
+              {t.sessions.title}
             </p>
             <h1 className="mt-2 font-serif text-4xl font-normal tracking-[-0.02em] text-zinc-900 sm:text-5xl">
               {pageTitle}
